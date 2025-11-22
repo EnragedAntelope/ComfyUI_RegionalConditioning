@@ -184,45 +184,45 @@ class RegionalPrompterFlux:
                     "min": 64,
                     "max": MAX_RESOLUTION,
                     "step": 64,
-                    "tooltip": "Output image width"
+                    "tooltip": "Output width - must match your latent/sampler"
                 }),
                 "height": ("INT", {
                     "default": 1024,
                     "min": 64,
                     "max": MAX_RESOLUTION,
                     "step": 64,
-                    "tooltip": "Output image height"
+                    "tooltip": "Output height - must match your latent/sampler"
+                }),
+                "soften_masks": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Enable feathering at region edges - recommended ON"
                 }),
                 "background_prompt": ("STRING", {
                     "default": "photo of a city street, high quality",
                     "multiline": True,
-                    "tooltip": "Background/scene description (applies to whole image)"
+                    "tooltip": "Scene description (applies to entire image as base)"
                 }),
                 "region1_prompt": ("STRING", {
                     "default": "red sports car",
                     "multiline": True,
-                    "tooltip": "Prompt for first region/box (leave empty to disable)"
-                }),
-                "soften_masks": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "✅ RECOMMENDED: Softer masks (0.8 strength + gentle edge blend) work better than harsh full-strength (1.0) masks. Confirmed better for Flux, works well with other mask-based models. Disable if you prefer sharper region edges."
+                    "tooltip": "First region - draw box on canvas to position"
                 }),
             },
             "optional": {
                 "region2_prompt": ("STRING", {
                     "default": "street vendor",
                     "multiline": True,
-                    "tooltip": "Prompt for second region (optional - clear this to disable)"
+                    "tooltip": "Second region (optional - clear to disable)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for third region (optional - note: Flux and similar models work best with 3-4 regions max)"
+                    "tooltip": "Third region (optional - Flux works best with 3-4 max)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for fourth region (optional - note: Flux and similar models work best with 3-4 regions max)"
+                    "tooltip": "Fourth region (optional - Flux works best with 3-4 max)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
@@ -232,43 +232,20 @@ class RegionalPrompterFlux:
     RETURN_NAMES = ("conditioning",)
     FUNCTION = "encode_regions_flux"
     CATEGORY = "Davemane42/Enhanced"
-    DESCRIPTION = """🎨 ALL-IN-ONE Mask-Based Regional Prompting (EASY MODE!)
-For: Flux, Chroma, SD3, and other mask-based models
+    DESCRIPTION = """Mask-based regional prompting with inline text encoding.
 
-Just type your prompts and draw boxes - that's it!
+Usage:
+1. Connect CLIP from checkpoint
+2. Set width/height to match your latent
+3. Type prompts for background and regions
+4. Draw boxes on canvas to position regions
+5. Connect conditioning to sampler
 
-✅ No external CLIP Text Encode nodes needed
-✅ Simple workflow: CLIP → This Node → Sampler
-✅ "Soften Masks" option - KEEP IT ON! (works better than harsh edges)
-✅ Up to 4 regions + background
-✅ Visual box drawing interface
-✅ Comes with example prompts pre-filled!
-✅ Width/height can be connected from Empty Latent Image node!
+Compatible: Flux, Chroma, SD3, SD3.5, Qwen-Image
+Recommended: CFG 1.0-3.5, soften_masks ON, 3-4 regions max for Flux"""
 
-How to use:
-1. Connect CLIP from your checkpoint
-2. Set output width/height (or connect from Empty Latent Image!)
-3. Review example prompts (or replace with your own)
-4. Draw boxes on canvas for each region
-5. Leave "Soften Masks" ON (recommended for all models)
-6. Connect conditioning to sampler!
-
-💡 IMPORTANT - "Soften Masks" Setting:
-• ✅ KEEP ON (default): Softer region edges, better blending (0.8 strength + gentle feather)
-• ❌ Turn OFF only if: You want sharp, harsh region boundaries (1.0 strength, no feather)
-• Confirmed better results with Flux when ON
-• Works well with other mask-based models - try it first!
-
-Model-Specific Tips:
-• FLUX: Use 3-4 regions max (quality degrades with more)
-• FLUX-BASED (Chroma, etc.): Likely 3-4 region limit too (untested), try and see!
-• SD3/SD3.5: No known region limit
-• QWEN-IMAGE: Experimental - try mask-based conditioning and report results!
-
-Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models"""
-
-    def encode_regions_flux(self, clip, width, height, background_prompt, region1_prompt,
-                           soften_masks, extra_pnginfo, unique_id,
+    def encode_regions_flux(self, clip, width, height, soften_masks, background_prompt, region1_prompt,
+                           extra_pnginfo, unique_id,
                            region2_prompt="", region3_prompt="", region4_prompt=""):
         """Encode all prompts and apply mask-based regional conditioning for Flux/Chroma/SD3."""
 
@@ -302,6 +279,12 @@ Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models
 
         # Count non-empty regions (excluding background)
         num_regions = sum(1 for p in prompts[1:] if p and p.strip())
+
+        print(f"\n🎨 Regional Prompter - Processing:")
+        print(f"   Dimensions: {width}x{height} (latent: {width//8}x{height//8})")
+        print(f"   Regions: {num_regions} active (background + {num_regions} regions)")
+        print(f"   Soften masks: {soften_masks}")
+        print(f"   Default boxes: {values}")
 
         if num_regions > 4:
             print(f"⚠️  Warning: {num_regions} regions detected. Flux works best with 3-4 regions maximum.")
@@ -389,6 +372,11 @@ Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models
             # Fill mask with specified strength
             mask[0, y_latent:y_end, x_latent:x_end] = mask_strength
 
+            print(f"   Region {i}: '{prompts[i][:40]}...'")
+            print(f"      Box: x={x}, y={y}, w={w}, h={h}")
+            print(f"      Latent: x={x_latent}, y={y_latent}, w={w_latent}, h={h_latent}")
+            print(f"      Mask strength: {mask_strength}, Region strength: {strength}")
+
             # Apply feathering if softening enabled (gentle edge blending to avoid harsh boundaries)
             if soften_masks:
                 # Apply gentle gaussian-like feather at edges (40-60px = 5-8 latent pixels)
@@ -416,6 +404,9 @@ Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models
                 n[1]['strength'] = max(0.0, min(10.0, strength))
                 n[1]['set_area_to_bounds'] = False
                 combined_conditioning.append(n)
+
+        print(f"   ✅ Generated {len(combined_conditioning)} conditioning blocks")
+        print(f"   💡 Tip: Flux works best at CFG 1.0-3.5 with regional prompting\n")
 
         return (combined_conditioning,)
 

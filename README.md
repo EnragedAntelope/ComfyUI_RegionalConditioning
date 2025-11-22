@@ -445,24 +445,11 @@ TL;DR: Use it however you want, but don't blame us if it breaks! 😄
 
 ---
 
-## 🙏 Credits
+## Credits
 
-**Current Maintainer:** EnragedAntelope
-**Repository:** [github.com/EnragedAntelope/ComfyUI_RegionalConditioning](https://github.com/EnragedAntelope/ComfyUI_RegionalConditioning)
+Based on the visual area conditioning concept by [Davemane42](https://github.com/Davemane42).
 
-**Original Author:** [Davemane42](https://github.com/Davemane42)
-**Original Concept:** Visual regional conditioning interface for ComfyUI
-
-**Modernization & Enhancement (2025):**
-- Flux/Chroma/SD3 support with mask-based conditioning
-- Enhanced "Easy Mode" nodes with inline prompts
-- Comprehensive error handling and validation
-- User-friendly documentation rewrite
-
-**Special Thanks:**
-- ComfyUI community for testing and feedback
-- Black Forest Labs for Flux research and documentation
-- All contributors who reported issues and suggested improvements
+Maintained by EnragedAntelope - [github.com/EnragedAntelope/ComfyUI_RegionalConditioning](https://github.com/EnragedAntelope/ComfyUI_RegionalConditioning)
 
 ---
 

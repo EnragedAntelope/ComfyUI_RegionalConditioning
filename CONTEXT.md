@@ -30,7 +30,7 @@
 - **Region Limit (Flux):** Flux works best with 3-4 regions maximum (confirmed)
 - **Region Limit (Chroma):** Likely 3-4 regions too since Chroma is Flux-based (UNTESTED - needs user confirmation)
 - **Region Limit (SD3/SD3.5):** No known limit
-- **CFG Guidance (Flux):** Increase to 5-7 (vs typical 3-5) for better regional control
+- **CFG Guidance (Flux):** Use 1.0-3.5 for regional prompting (Flux normally likes CFG 1.0; higher values like 5+ cause blur)
 
 #### CLIP Encoding (Inline Prompts)
 - **Method:** `clip.tokenize(prompt)` → `clip.encode_from_tokens(tokens, return_pooled=True)`
