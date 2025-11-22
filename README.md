@@ -6,6 +6,17 @@ Draw boxes on a canvas, type what you want in each region, and generate! Perfect
 
 ---
 
+## 📸 Example Workflow
+
+<!-- WORKFLOW IMAGE GOES HERE -->
+<!-- Replace this comment with a screenshot showing the nodes connected -->
+<!-- Suggested: Side-by-side comparison of Easy Mode vs Advanced Mode workflows -->
+
+![Workflow Example](docs/workflow-example.png)
+*Example workflow showing the simple 3-node setup: Checkpoint → CLIP → Regional Prompter → Sampler*
+
+---
+
 ## 🚀 Quick Start (60 seconds)
 
 ### For Flux / Chroma (Modern Models)
@@ -26,6 +37,21 @@ Draw boxes on a canvas, type what you want in each region, and generate! Perfect
 ### For SDXL / Stable Diffusion
 
 Same steps, but use **🎨 Regional Prompter (SD/SDXL - Easy!)** instead.
+
+---
+
+## 📥 Sample Workflows (Download & Import)
+
+Ready-to-use workflow JSON files - just drag and drop into ComfyUI!
+
+<!-- WORKFLOW JSON LINKS GO HERE -->
+<!-- Add workflow JSON files to the repository and link them here -->
+
+- **[Flux Workflow](workflows/flux-regional-example.json)** - Flux.1-dev with 2 regions, optimized settings
+- **[SDXL Workflow](workflows/sdxl-regional-example.json)** - SDXL with 3 regions, area-based conditioning
+- **[Qwen-Image Workflow](workflows/qwen-regional-example.json)** - Experimental Qwen-Image setup (untested)
+
+*Don't have these files yet? Check the [examples](examples/) folder or create your own using the Quick Start guide above!*
 
 ---
 
@@ -196,19 +222,33 @@ When you add a Regional Prompter node, you'll see:
 **Perfect for Flux, Chroma, and SD3**
 
 **Inputs:**
-- `clip` - CLIP model from your checkpoint
-- `width`, `height` - Output image dimensions
+- `clip` - CLIP model from your checkpoint *(from Load Checkpoint node)*
+- `width`, `height` - Output image dimensions *(just numbers - no latent needed!)*
 - `background_prompt` - Overall scene description (multiline text)
 - `region1_prompt` through `region4_prompt` - What appears in each box (optional)
-- `flux_optimize` - Enable Flux optimizations (default: ON)
+- `soften_masks` - Soften region edges (default: ON - RECOMMENDED!)
 
 **Outputs:**
-- `conditioning` - Connect to your sampler
+- `conditioning` - Connect to your KSampler's positive conditioning input
 
-**Flux Optimizations (when enabled):**
-- Softened mask strength (0.8 instead of 1.0) for better blending
-- Gentle feathering at region edges
-- Automatic warning if too many regions
+**How the Workflow Connects:**
+```
+Load Checkpoint → CLIP
+                   ↓
+    Regional Prompter (Flux/Chroma)
+    (Set width/height here, e.g., 1024x1024)
+                   ↓
+              conditioning
+                   ↓
+            KSampler (positive input)
+```
+
+**💡 About "Soften Masks" (IMPORTANT!):**
+- ✅ **KEEP ON (default):** Softer region edges, better blending (0.8 strength + gentle feather)
+- ❌ **Turn OFF only if:** You want sharp, harsh region boundaries (1.0 strength, no feather)
+- **Why it's better:** Research shows softer masks (0.8) produce better results than full-strength (1.0) for Flux
+- **For Chroma/SD3:** Try it ON first (default), disable only if you prefer sharper edges
+- **What feathering does:** Gentle edge blending (5-8 pixels) to avoid harsh boundaries - you can disable by turning this toggle OFF
 
 ---
 
@@ -418,25 +458,49 @@ TL;DR: Use it however you want, but don't blame us if it breaks! 😄
 
 ---
 
-## 📸 Example Workflows
+## 📸 Complete Workflow Examples
 
-### Regional Prompter (Easy Mode)
-The simplest workflow possible:
-
-```
-Checkpoint Loader → CLIP
-                     ↓
-Regional Prompter (Flux/Chroma - Easy!)
-(Type all prompts directly in this node!)
-                     ↓
-                 Sampler → VAE Decode → Save Image
-```
-
-### Advanced Mode (Original Nodes)
-For power users who need shared CLIP encodings:
+### Easy Mode Workflow (RECOMMENDED)
+The simplest possible setup - only 3 nodes needed!
 
 ```
-Checkpoint Loader → CLIP → CLIPTextEncode (background)
+Load Checkpoint
+    ├─→ CLIP ─→ Regional Prompter (Flux/Chroma - Easy!)
+    │             ├─ Set width: 1024
+    │             ├─ Set height: 1024
+    │             ├─ background_prompt: "your scene description"
+    │             ├─ region1_prompt: "what goes in box 1"
+    │             ├─ region2_prompt: "what goes in box 2"
+    │             └─ soften_masks: ✅ ON (recommended!)
+    │
+    ├─→ MODEL ──┐
+    └─→ VAE ───┐│
+               ││
+    Regional Prompter → conditioning
+               ││
+               ↓↓
+            KSampler
+         (positive: conditioning from Regional Prompter)
+         (negative: empty or your negative prompt)
+         (model: from Load Checkpoint)
+         (latent: Empty Latent Image at matching size)
+               ↓
+          VAE Decode
+               ↓
+          Save Image
+```
+
+**Key Points:**
+- ✅ Width/height in the Regional Prompter should match your Empty Latent Image size
+- ✅ No latent input needed on the Regional Prompter - it just needs the numbers!
+- ✅ The node outputs CONDITIONING, not an image - connect to KSampler's positive input
+- ✅ Keep "Soften Masks" ON for better results (especially Flux)
+
+### Advanced Mode Workflow (For Power Users)
+When you need shared CLIP encodings or more control:
+
+```
+Load Checkpoint → CLIP → CLIPTextEncode (background)
                             ↓
                      CLIPTextEncode (region 1)
                             ↓
@@ -444,8 +508,15 @@ Checkpoint Loader → CLIP → CLIPTextEncode (background)
                             ↓
             Multi Area Conditioning (collects all)
                             ↓
-                        Sampler → VAE Decode → Save Image
+                   conditioning output
+                            ↓
+                        KSampler → VAE Decode → Save Image
 ```
+
+**When to use Advanced Mode:**
+- You want to share CLIP encodings across multiple nodes
+- You need manual control over mask strength per region
+- You're doing complex prompt engineering with multiple text encode nodes
 
 ---
 

@@ -139,34 +139,92 @@ except Exception as e:
 - Grid overlay (helps align to 64px boundaries)
 - Inline prompts (no external nodes needed)
 - Automatic mask conversion (boxes → masks behind the scenes)
+- Default templates with example prompts and pre-drawn boxes
 
-### Current UX Gaps
-1. **First-Time Experience:** Blank canvas with no example boxes
-   - **Fix Idea:** Add default template with pre-drawn boxes and sample prompts
+### UX Improvements (November 2025)
 
-2. **Flux Strength Confusion:** Users don't know 0.8 is optimal
-   - **Current:** Hidden behind `flux_optimize` boolean
-   - **Alternative:** Could expose `mask_strength` slider (0.1-1.0)
-   - **Decision:** Keep automatic for simplicity (can expose if users request)
+1. **✅ FIXED: First-Time Experience**
+   - **Was:** Blank canvas with no example, intimidating for new users
+   - **Now:** Pre-filled example prompts ("red sports car", "street vendor") + pre-drawn boxes
+   - **Impact:** Users can test immediately without reading docs
 
-3. **Dynamic Latent Sizing:**
+2. **✅ FIXED: Soften Masks Clarity**
+   - **Was:** Parameter named `flux_optimize` (confusing since node works for Chroma/SD3 too)
+   - **Now:** Renamed to `soften_masks` with explicit tooltip guidance
+   - **Tooltip:** "✅ RECOMMENDED: Softer masks (0.8 strength + gentle edge blend) work better than harsh full-strength (1.0) masks. Confirmed for Flux. Try it first for Chroma/SD3, disable if you prefer sharper region edges."
+   - **Node Description:** Dedicated "💡 IMPORTANT" section explaining when to keep ON vs turn OFF
+   - **Impact:** Users understand it's a softness toggle (not Flux-specific magic), know when to enable/disable
+
+3. **✅ FIXED: Feathering Concerns**
+   - **Question:** Is feathering the only option? Will it look crappy?
+   - **Answer:** Feathering is optional - tied to the `soften_masks` toggle
+     - ON: 0.8 strength + gentle 5-8px feather (better blending)
+     - OFF: 1.0 strength + no feather (sharp edges)
+   - **Advanced Option:** Use MultiAreaConditioningMask node for manual `mask_strength` control (0.1-1.0 slider)
+   - **Why Feathering:** Avoids harsh boundaries that can look artificial, based on Flux research
+   - **Impact:** Users have full control, understand the trade-offs
+
+4. **✅ FIXED: Dynamic Canvas Sync**
+   - **Was:** Users had to manually edit properties to resize canvas
+   - **Now:** Canvas auto-resizes when width/height inputs change on Flux node
+   - **Implementation:** Widget callbacks sync properties in real-time
+   - **Impact:** Seamless UX, boxes scale proportionally
+
+5. **✅ FIXED: Workflow Setup Confusion**
+   - **Question:** Does it need a latent input?
+   - **Answer:** NO! Only needs CLIP input + width/height parameters (just numbers)
+   - **Clarification:** Node outputs CONDITIONING (connects to KSampler positive input)
+   - **README:** Added detailed workflow diagram showing exact connections
+   - **Impact:** Users understand the node flow correctly
+
+6. **Dynamic Latent Sizing:**
    - **Question:** Does it work with any input size?
    - **Answer:** YES! Canvas dimensions are independent from output dimensions
    - **How:** RegionalPrompterFlux scales boxes from canvas to output size
    - **Example:** Draw on 512x512 canvas, output at 1024x1024 → boxes scale 2x automatically
+   - **Important:** Width/height in Regional Prompter should match Empty Latent Image size
 
-4. **Region Limit Feedback:** No warning when too many regions for Flux
-   - **Fix:** Added console warning if >4 regions detected
+7. **Region Limit Feedback:**
+   - **Fixed:** Console warning if >4 regions detected for Flux
+
+---
+
+## Naming Consistency & Terminology
+
+### Critical Guidelines (November 2025)
+
+**Problem:** Calling things "Flux" when they apply to multiple models confuses users.
+
+**Rules:**
+1. ✅ **Use "Flux"** when feature is Flux-specific (e.g., "3-4 region limit for Flux")
+2. ✅ **Use "Mask-Based"** when referring to the conditioning method (Flux/Chroma/SD3/SD3.5)
+3. ✅ **Use "Soften Masks"** for the toggle (not "Flux Optimize") - it's model-agnostic
+4. ✅ **Use "Area-Based"** for SD1.5/SD2.x/SDXL conditioning
+5. ❌ **Don't use "Flux"** as shorthand for mask-based conditioning
+
+**Examples:**
+- ✅ Good: "Mask-based node for Flux, Chroma, SD3"
+- ❌ Bad: "Flux node" (implies Flux-only)
+- ✅ Good: "Soften Masks (confirmed better for Flux, try for others)"
+- ❌ Bad: "Flux Optimize" (confusing for Chroma/SD3 users)
+
+### Audit Checklist
+- [x] Node names clarified (not Flux-exclusive)
+- [x] Parameter renamed (`flux_optimize` → `soften_masks`)
+- [x] Tooltips use accurate model references
+- [x] Node descriptions separate model-specific tips
+- [x] README uses "mask-based" consistently
+- [x] CONTEXT.md documents terminology rules
 
 ---
 
 ## Future Improvements
 
 ### High Priority
-- [ ] **Default Template Mode:** Pre-filled example prompts and drawn boxes for first launch
+- [x] **Default Template Mode:** Pre-filled example prompts and drawn boxes for first launch ✅ DONE
 - [ ] **Qwen-Image Testing:** Acquire checkpoint and test compatibility
-- [ ] **Dynamic Canvas Sync:** Auto-resize canvas when latent input size changes
-- [ ] **Validation Warnings in UI:** Show visual warnings when regions exceed Flux limits
+- [x] **Dynamic Canvas Sync:** Auto-resize canvas when latent input size changes ✅ DONE
+- [ ] **Validation Warnings in UI:** Show visual warnings when regions exceed recommended limits
 
 ### Medium Priority
 - [ ] **Expose Flux Strength (Optional):** Add `mask_strength` parameter to RegionalPrompterFlux if users request

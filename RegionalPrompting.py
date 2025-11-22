@@ -195,9 +195,9 @@ class RegionalPrompterFlux:
                     "multiline": True,
                     "tooltip": "Prompt for first region/box (leave empty to disable)"
                 }),
-                "use_soft_masks": ("BOOLEAN", {
+                "soften_masks": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Enable soft masks (0.8 strength + feathering). Recommended for Flux (confirmed), may help Chroma/SD3. Disable for full-strength masks (1.0)"
+                    "tooltip": "✅ RECOMMENDED: Softer masks (0.8 strength + gentle edge blend) work better than harsh full-strength (1.0) masks. Confirmed for Flux. Try it first for Chroma/SD3, disable if you prefer sharper region edges."
                 }),
             },
             "optional": {
@@ -224,38 +224,40 @@ class RegionalPrompterFlux:
     RETURN_NAMES = ("conditioning",)
     FUNCTION = "encode_regions_flux"
     CATEGORY = "Davemane42/Enhanced"
-    DESCRIPTION = """🎨 ALL-IN-ONE Flux/Chroma/SD3 Regional Prompting (EASY MODE!)
+    DESCRIPTION = """🎨 ALL-IN-ONE Mask-Based Regional Prompting (EASY MODE!)
+For: Flux, Chroma, SD3, SD3.5
 
 Just type your prompts and draw boxes - that's it!
 
 ✅ No external CLIP Text Encode nodes needed
 ✅ Simple workflow: CLIP → This Node → Sampler
-✅ Soft masks option (0.8 strength + feathering)
-✅ Up to 4 regions + background (Flux works best with 3-4 max)
+✅ "Soften Masks" option - KEEP IT ON! (works better than harsh edges)
+✅ Up to 4 regions + background
 ✅ Visual box drawing interface
 ✅ Comes with example prompts pre-filled!
 
 How to use:
 1. Connect CLIP from your checkpoint
-2. Review example prompts (or replace with your own)
-3. Draw boxes on canvas for each region
-4. Enable "Soft Masks" for Flux (recommended)
-5. Connect to sampler!
+2. Set your output width/height (e.g., 1024x1024)
+3. Review example prompts (or replace with your own)
+4. Draw boxes on canvas for each region
+5. Leave "Soften Masks" ON (recommended for all models)
+6. Connect conditioning to sampler!
 
-Flux Tips:
-• Use 3-4 regions maximum for best results
-• Keep "Soft Masks" enabled (0.8 strength works better than 1.0)
-• Increase CFG to 5-7 (vs typical 3-5)
-• Draw larger regions for better control
+💡 IMPORTANT - "Soften Masks" Setting:
+• ✅ KEEP ON (default): Softer region edges, better blending (0.8 strength + gentle feather)
+• ❌ Turn OFF only if: You want sharp, harsh region boundaries (1.0 strength, no feather)
+• Confirmed better results with Flux when ON
+• Try it first for Chroma/SD3, disable only if you dislike the effect
 
-Chroma/SD3 Tips:
-• Try "Soft Masks" ON first, disable if results look washed out
-• No region limit (unlike Flux)
+Model-Specific Tips:
+• FLUX: Use 3-4 regions max, increase CFG to 5-7, draw larger regions
+• CHROMA/SD3: No region limit, standard CFG values work fine
 
-Compatible: Flux, Chroma, SD3, SD3.5"""
+Compatible: Flux (all variants), Chroma, SD3, SD3.5"""
 
     def encode_regions_flux(self, clip, width, height, background_prompt, region1_prompt,
-                           use_soft_masks, extra_pnginfo, unique_id,
+                           soften_masks, extra_pnginfo, unique_id,
                            region2_prompt="", region3_prompt="", region4_prompt=""):
         """Encode all prompts and apply mask-based regional conditioning for Flux."""
 
@@ -298,10 +300,10 @@ Compatible: Flux, Chroma, SD3, SD3.5"""
         # Apply mask-based conditioning
         combined_conditioning = []
 
-        # Determine mask strength based on soft mask setting
-        # Research shows 0.8 (softer masks) work better for Flux than full 1.0 strength
-        # May also benefit Chroma and SD3, but not confirmed
-        mask_strength = 0.8 if use_soft_masks else 1.0
+        # Determine mask strength based on soften setting
+        # Research shows 0.8 (softer masks) work better than full 1.0 strength for Flux
+        # Users can try it for Chroma/SD3 (default ON), disable if they prefer sharper edges
+        mask_strength = 0.8 if soften_masks else 1.0
 
         # Background (fullscreen - no mask)
         if encoded_conditionings[0]:
@@ -365,8 +367,8 @@ Compatible: Flux, Chroma, SD3, SD3.5"""
             # Fill mask with specified strength
             mask[0, y_latent:y_end, x_latent:x_end] = mask_strength
 
-            # Apply feathering if soft masks enabled (gentle edge blending)
-            if use_soft_masks:
+            # Apply feathering if softening enabled (gentle edge blending to avoid harsh boundaries)
+            if soften_masks:
                 # Apply gentle gaussian-like feather at edges (40-60px = 5-8 latent pixels)
                 feather_size = min(6, w_latent // 4, h_latent // 4)
                 if feather_size > 0:
