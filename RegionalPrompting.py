@@ -198,7 +198,7 @@ class RegionalPrompterFlux:
                     "tooltip": "Enable feathering at region edges - recommended ON"
                 }),
                 "background_prompt": ("STRING", {
-                    "default": "photo of a city street, high quality",
+                    "default": "photo of empty city street at night, high quality",
                     "multiline": True,
                     "tooltip": "Scene description (applies to entire image as base)"
                 }),
@@ -212,9 +212,9 @@ class RegionalPrompterFlux:
                     "tooltip": "Background conditioning strength (0.3-0.7 for Flux, lower = regions show more)"
                 }),
                 "region1_prompt": ("STRING", {
-                    "default": "red sports car",
+                    "default": "red sports car on left side of image (left third of image)",
                     "multiline": True,
-                    "tooltip": "Region 1 - First region/box (see canvas below)"
+                    "tooltip": "Region 1 - TIP: Position regions far apart for best results"
                 }),
                 "region1_strength": ("FLOAT", {
                     "default": 2.5,
@@ -224,9 +224,9 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 1 strength (2-4 for Flux, too high = soft/lose details)"
                 }),
                 "region2_prompt": ("STRING", {
-                    "default": "giraffe wearing sunglasses",
+                    "default": "giraffe wearing sunglasses on right side of image (last third of image)",
                     "multiline": True,
-                    "tooltip": "Region 2 - Second region/box (see canvas below)"
+                    "tooltip": "Region 2 - TIP: Position regions far apart for best results"
                 }),
                 "region2_strength": ("FLOAT", {
                     "default": 3.5,

@@ -209,7 +209,7 @@ function addRegionalPrompterCanvas(node, app) {
 		computeCanvasSize(node, node.size);
 	}, 100);
 
-	return { minWidth: 200, minHeight: 350, widget }  // Balanced size for canvas visibility
+	return { minWidth: 200, minHeight: 280, widget }  // Fixed canvas height
 }
 
 app.registerExtension({
@@ -222,12 +222,12 @@ app.registerExtension({
 
 				this.setProperty("width", 512)
 				this.setProperty("height", 512)
-				// Default template: Two example boxes pre-drawn
-				// Region 1 (red sports car): left side, 200x250px starting at (50, 150)
-				// Region 2 (giraffe): right side, 180x300px starting at (280, 100) - taller for giraffe
+				// Default template: Regions FAR APART (left & right thirds) for best results
+				// Region 1 (red sports car): left third, 150x300px starting at (30, 100)
+				// Region 2 (giraffe): right third, 150x350px starting at (332, 80)
 				this.setProperty("values", [
-					[50, 150, 200, 250, 2.0],   // Region 1 - red sports car
-					[280, 100, 180, 300, 2.0]    // Region 2 - giraffe (taller box)
+					[30, 100, 150, 300, 2.0],   // Region 1 - left third
+					[332, 80, 150, 350, 2.0]    // Region 2 - right third (taller for giraffe)
 				])
 
 				this.selected = false
@@ -281,13 +281,13 @@ app.registerExtension({
 							node.widgets[offset + 3].value = values[arrayIndex][3]  // box_h
 						}
 					},
-					{ step: 10, min: 1, max: 2 }  // Start at 1, default max 2 regions
+					{ step: 10, min: 1, max: 2, tooltip: "Select which region to edit (use box_x/y/w/h below to adjust position)" }
 				)
 
-				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
-				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
-				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
-				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
+				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)}, {tooltip: "X position of selected region (pixels from left)"})
+				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)}, {tooltip: "Y position of selected region (pixels from top)"})
+				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)}, {tooltip: "Width of selected region in pixels"})
+				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)}, {tooltip: "Height of selected region in pixels"})
 				// Strength slider removed - now using per-region strength inputs from Python
 
 				this.onRemoved = function () {
@@ -327,12 +327,12 @@ app.registerExtension({
 
 				this.setProperty("width", 1024)
 				this.setProperty("height", 1024)
-				// Default template: Two example boxes pre-drawn
-				// Region 1 (red sports car): left side, 400x500px starting at (100, 300)
-				// Region 2 (giraffe): right side, 350x600px starting at (560, 200) - taller for giraffe
+				// Default template: Regions FAR APART (left & right thirds) for best results
+				// Region 1 (red sports car): left third, 300x600px starting at (50, 200)
+				// Region 2 (giraffe): right third, 300x700px starting at (674, 150)
 				this.setProperty("values", [
-					[100, 300, 400, 500, 2.0],   // Region 1 - red sports car
-					[560, 200, 350, 600, 2.0]    // Region 2 - giraffe (taller box)
+					[50, 200, 300, 600, 2.0],   // Region 1 - left third
+					[674, 150, 300, 700, 2.0]    // Region 2 - right third (taller for giraffe)
 				])
 
 				this.selected = false
@@ -386,13 +386,13 @@ app.registerExtension({
 							node.widgets[offset + 3].value = values[arrayIndex][3]  // box_h
 						}
 					},
-					{ step: 10, min: 1, max: 2 }  // Start at 1, default max 2 regions
+					{ step: 10, min: 1, max: 2, tooltip: "Select which region to edit (use box_x/y/w/h below to adjust position)" }
 				)
 
-				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
-				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
-				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
-				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
+				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)}, {tooltip: "X position of selected region (pixels from left)"})
+				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)}, {tooltip: "Y position of selected region (pixels from top)"})
+				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)}, {tooltip: "Width of selected region in pixels"})
+				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)}, {tooltip: "Height of selected region in pixels"})
 				// Strength slider removed - now using per-region strength inputs from Python
 
 				this.onRemoved = function () {

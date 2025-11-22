@@ -135,49 +135,35 @@ export function getDrawColor(percent, alpha) {
 }
 
 export function computeCanvasSize(node, size) {
-	if (node.widgets[0].last_y == null) return;
+	if (!node.widgets || node.widgets.length === 0 || node.widgets[0].last_y == null) return;
 
-	const MIN_SIZE = 320;  // Minimum canvas size for visibility
-	const BOTTOM_PADDING = 20;  // Padding to prevent canvas overlap with widgets/border
+	// FIXED canvas height - simpler and more reliable than dynamic calculation
+	const CANVAS_HEIGHT = 280;
+	const WIDGET_SPACING = 4;
 
-	let y = LiteGraph.NODE_WIDGET_HEIGHT * Math.max(node.inputs.length, node.outputs.length) + 5;
-	let freeSpace = size[1] - y;
+	let y = LiteGraph.NODE_WIDGET_HEIGHT * Math.max(node.inputs ? node.inputs.length : 0, node.outputs ? node.outputs.length : 0) + 5;
 
-	// Compute the height of all non customCanvas widgets
-	let widgetHeight = 0;
-	for (let i = 0; i < node.widgets.length; i++) {
-		const w = node.widgets[i];
-		if (w.type !== "customCanvas") {
-			if (w.computeSize) {
-				widgetHeight += w.computeSize()[1] + 4;
-			} else {
-				widgetHeight += LiteGraph.NODE_WIDGET_HEIGHT + 5;
-			}
-		}
-	}
-
-	// Calculate canvas height with padding
-	freeSpace -= widgetHeight;
-	let canvasHeight = Math.max(MIN_SIZE, freeSpace - BOTTOM_PADDING);
-
-	// Adjust node size if needed to fit canvas + widgets + padding
-	const requiredHeight = y + widgetHeight + canvasHeight + BOTTOM_PADDING;
-	if (size[1] < requiredHeight) {
-		node.size[1] = requiredHeight;
-		node.graph.setDirtyCanvas(true);
-	}
-
-	// Position each of the widgets
+	// Position widgets sequentially with canvas at fixed height
 	for (const w of node.widgets) {
 		w.y = y;
 		if (w.type === "customCanvas") {
-			y += canvasHeight;
+			y += CANVAS_HEIGHT;
 		} else if (w.computeSize) {
-			y += w.computeSize()[1] + 4;
+			y += w.computeSize()[1] + WIDGET_SPACING;
 		} else {
-			y += LiteGraph.NODE_WIDGET_HEIGHT + 4;
+			y += LiteGraph.NODE_WIDGET_HEIGHT + WIDGET_SPACING;
 		}
 	}
 
-	node.canvasHeight = canvasHeight;
+	// Set canvas height
+	node.canvasHeight = CANVAS_HEIGHT;
+
+	// Ensure node is tall enough
+	const requiredHeight = y + 20;  // 20px bottom margin
+	if (node.size[1] < requiredHeight) {
+		node.size[1] = requiredHeight;
+		if (node.graph) {
+			node.graph.setDirtyCanvas(true);
+		}
+	}
 }
