@@ -54,7 +54,7 @@
 | **HiDream** | 4 | CLIP-L + CLIP-G + 2× T5 variants | ComfyUI uses 4 encoder files |
 | **WAN 2.1** | 1 | UMT5-XXL | Standard encoding (fp16/fp8/bf16 variants) |
 | **WAN 2.2** | 1 | UMT5-XXL + MoE | Standard encoding (nf4 4-bit quantization) |
-| **Qwen-Image** | 1 | (Unknown - likely CLIP variant) | Experimental, standard encoding expected |
+| **Qwen-Image** | 1 | Qwen 2.5 VL (qwen_2.5_vl_7b.safetensors) | Standard encoding (vision-language LLM encoder) |
 
 **Detection Strategy:**
 ```python
@@ -353,7 +353,7 @@ except Exception as e:
 - [ ] SD3 / SD3.5 mask-based conditioning (3 encoders: CLIP-L + CLIP-G + T5-XXL)
 - [ ] HiDream compatibility (4 encoders in ComfyUI)
 - [ ] WAN 2.1 / WAN 2.2 compatibility (1 encoder: UMT5-XXL)
-- [ ] Qwen-Image (generation model) compatibility (encoder architecture unknown)
+- [ ] Qwen-Image (generation model) compatibility (1 encoder: Qwen 2.5 VL LLM)
 - [ ] Canvas scaling with different output resolutions
 - [ ] Feathering effectiveness across different Flux models
 - [ ] Region limit (>4 regions) quality degradation
@@ -381,7 +381,7 @@ except Exception as e:
 - **HiDream:** HiDream-I1, HiDream-E1 (4 encoders in ComfyUI: CLIP-L + CLIP-G + T5 variants)
 - **WAN 2.1:** UMT5-XXL (1 encoder: fp16/fp8/bf16 variants)
 - **WAN 2.2:** UMT5-XXL + MoE architecture (1 encoder: nf4 4-bit quantization)
-- **Qwen-Image:** Qwen/Qwen-VL (encoder architecture needs confirmation)
+- **Qwen-Image:** Qwen/Qwen-VL (1 encoder: Qwen 2.5 VL - qwen_2.5_vl_7b.safetensors vision-language LLM)
 
 ---
 
