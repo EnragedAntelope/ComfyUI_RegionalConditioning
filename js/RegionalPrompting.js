@@ -243,17 +243,17 @@ app.registerExtension({
 							node.widgets[offset + 1].value = values[v][1]
 							node.widgets[offset + 2].value = values[v][2]
 							node.widgets[offset + 3].value = values[v][3]
-							if (!values[v][4]) {values[v][4] = 1.0}
+							if (!values[v][4]) {values[v][4] = 0.8}
 							node.widgets[offset + 4].value = values[v][4]
 						}
 					},
 					{ step: 10, max: 1 }
 				)
 
-				CUSTOM_INT(this, "x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
-				CUSTOM_INT(this, "y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
-				CUSTOM_INT(this, "width", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
-				CUSTOM_INT(this, "height", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
+				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
+				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
+				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
+				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
 				CUSTOM_INT(this, "strength", 0.8, function (v, _, node) {transformFunc(this, v, node, 4)}, {"min": 0.0, "max": 10.0, "step": 0.1, "precision": 2})
 
 				this.onRemoved = function () {
@@ -326,17 +326,17 @@ app.registerExtension({
 							node.widgets[offset + 1].value = values[v][1]
 							node.widgets[offset + 2].value = values[v][2]
 							node.widgets[offset + 3].value = values[v][3]
-							if (!values[v][4]) {values[v][4] = 1.0}
+							if (!values[v][4]) {values[v][4] = 0.8}
 							node.widgets[offset + 4].value = values[v][4]
 						}
 					},
 					{ step: 10, max: 1 }
 				)
 
-				CUSTOM_INT(this, "x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
-				CUSTOM_INT(this, "y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
-				CUSTOM_INT(this, "width", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
-				CUSTOM_INT(this, "height", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
+				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
+				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
+				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
+				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
 				CUSTOM_INT(this, "strength", 0.8, function (v, _, node) {transformFunc(this, v, node, 4)}, {"min": 0.0, "max": 10.0, "step": 0.1, "precision": 2})
 
 				this.onRemoved = function () {

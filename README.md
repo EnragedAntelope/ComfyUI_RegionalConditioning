@@ -1,521 +1,88 @@
-# Regional Conditioning for ComfyUI
+# ComfyUI Regional Conditioning
 
-**The simplest way to control exactly where things appear in your images.**
+Control different parts of your image with separate prompts using visual box drawing.
 
-Draw boxes on a canvas, type what you want in each region, and generate! Perfect for precise composition control in Stable Diffusion, SDXL, Flux, and Chroma.
+## Quick Start
 
----
+1. **Install**: Clone to `ComfyUI/custom_nodes/` or use ComfyUI Manager
+2. **Add Node**: Search for "Regional Prompter"
+3. **Connect**: CLIP → Regional Prompter → Sampler
+4. **Draw**: Use canvas to position regions, type prompts
+5. **Generate**: Connect to your sampler and run
 
-## 📸 Example Workflow
+## Nodes
 
-<!-- WORKFLOW IMAGE GOES HERE -->
-<!-- Replace this comment with a screenshot showing the nodes connected -->
-<!-- Suggested: Side-by-side comparison of Easy Mode vs Advanced Mode workflows -->
+### Regional Prompter (Mask-Based)
+**For:** Flux, Chroma, SD3, SD3.5, Qwen-Image
 
-![Workflow Example](docs/workflow-example.png)
-*Example workflow showing the simple 3-node setup: Checkpoint → CLIP → Regional Prompter → Sampler*
+**Inputs:**
+- `clip`: CLIP from checkpoint
+- `width`/`height`: Must match your latent dimensions
+- `soften_masks`: Feathering at edges (recommended ON)
+- `background_prompt`: Scene description
+- `region1-4_prompt`: Region-specific prompts
 
----
+**Tips:**
+- Use CFG 1.0-3.5 with Flux (higher = blur)
+- Keep to 3-4 regions max for Flux/Chroma
+- Default strength 0.8 works well
 
-## 🚀 Quick Start (60 seconds)
+### Regional Prompter (Area-Based)
+**For:** SD1.5, SD2.x, SDXL
 
-### For Flux / Chroma (Modern Models)
+Same interface, uses area-based conditioning instead of masks.
 
-1. Load your Flux/Chroma checkpoint
-2. Add the **🎨 Regional Prompter (Flux/Chroma - Easy!)** node
-3. Connect CLIP from your checkpoint to the node
-4. Type in the background prompt: `"photo of a city street"`
-5. Draw a box on the canvas where you want something specific
-6. Type in Region 1 prompt: `"red sports car"`
-7. Draw another box for something else
-8. Type in Region 2 prompt: `"street vendor"`
-9. Connect the conditioning output to your sampler
-10. Generate! 🎉
+## Canvas Controls
 
-**That's it!** No external nodes, no complex wiring. Just prompts and boxes.
+- **index**: Select which region to edit
+- **box_x, box_y**: Region top-left position
+- **box_w, box_h**: Region dimensions
+- **strength**: Conditioning strength (0-10, default 0.8)
 
-### For SDXL / Stable Diffusion
+## Example Workflow
 
-Same steps, but use **🎨 Regional Prompter (SD/SDXL - Easy!)** instead.
-
----
-
-## 📥 Sample Workflows (Download & Import)
-
-Ready-to-use workflow JSON files - just drag and drop into ComfyUI!
-
-<!-- WORKFLOW JSON LINKS GO HERE -->
-<!-- Add workflow JSON files to the repository and link them here -->
-
-- **[Flux Workflow](workflows/flux-regional-example.json)** - Flux.1-dev with 2 regions, optimized settings
-- **[SDXL Workflow](workflows/sdxl-regional-example.json)** - SDXL with 3 regions, area-based conditioning
-- **[Qwen-Image Workflow](workflows/qwen-regional-example.json)** - Experimental Qwen-Image setup (untested)
-
-*Don't have these files yet? Check the [examples](examples/) folder or create your own using the Quick Start guide above!*
-
----
-
-## ✨ Why Use This?
-
-**Without Regional Conditioning:**
-- "A tiger and a berry bush in front of mountains"
-- → AI puts them wherever it wants (usually random placement)
-
-**With Regional Conditioning:**
-- Background: "Mountains"
-- Box 1 (left side): "Tiger"
-- Box 2 (right side): "Berry bush"
-- → AI puts them **exactly where you drew the boxes**
-
-**Perfect for:**
-- Character positioning in scenes
-- Multi-subject compositions
-- Product photography layouts
-- Architectural visualization
-- Comic/storyboard panels
-
----
-
-## 📦 Installation
-
-### Method 1: ComfyUI Manager (Easiest)
-1. Open ComfyUI Manager
-2. Search for "Regional Conditioning"
-3. Click Install
-4. Restart ComfyUI
-
-### Method 2: Manual
-```bash
-cd ComfyUI/custom_nodes/
-git clone https://github.com/EnragedAntelope/ComfyUI_RegionalConditioning
-# Restart ComfyUI
+```
+Checkpoint Loader
+├→ CLIP → Regional Prompter (Mask-Based)
+│           ├ width: 1024
+│           ├ height: 1024
+│           ├ soften_masks: true
+│           ├ background: "city street"
+│           ├ region1: "red sports car"
+│           └ region2: "street vendor"
+├→ MODEL → KSampler ← conditioning
+└→ VAE → VAE Decode
 ```
 
----
+## Troubleshooting
 
-## 🎨 Which Node Should I Use?
+**Regions not showing:**
+- Check width/height match your latent exactly
+- Try lower CFG (1.0-2.0) with Flux
+- Verify boxes aren't outside image bounds
 
-### 🌟 RECOMMENDED: Enhanced Easy Nodes
+**Validation errors:**
+- Ensure width/height are multiples of 64
+- Check no regions overlap fullscreen
 
-These are the **easiest** way to use regional conditioning:
+**Blurry output:**
+- Lower CFG (Flux likes 1.0-3.5)
+- Try strength 0.6-0.8 instead of 1.0
 
-#### **🎨 Regional Prompter (Flux/Chroma - Easy!)**
-- ✅ For: Flux, Chroma, SD3, SD3.5
-- ✅ Type prompts directly in the node
-- ✅ Optimized for Flux (perfect mask strength and blending)
-- ✅ Just connect CLIP and go!
+## Advanced Nodes
 
-#### **🎨 Regional Prompter (SD/SDXL - Easy!)**
-- ✅ For: Stable Diffusion 1.5, SD 2.x, SDXL
-- ✅ Type prompts directly in the node
-- ✅ Same simple workflow
-- ✅ Perfect for traditional SD models
+Original nodes available for complex workflows:
 
-**Use these unless you have a specific reason not to.**
-
-### 🔧 Advanced Nodes (For Power Users)
-
-If you need more control or want to share CLIP encodings across multiple nodes:
-
-- **Multi Area Conditioning (SD/SDXL - Advanced)** - Area-based for traditional SD
-- **Multi Area Conditioning (Flux/Chroma - Advanced)** - Mask-based for modern models
-
-These require external CLIP Text Encode nodes but offer more flexibility.
-
----
-
-## 🎯 Model Compatibility
-
-| Model Type | Node to Use | Status | Notes |
-|------------|-------------|--------|-------|
-| **Stable Diffusion 1.5** | 🎨 Regional Prompter (SD/SDXL) | ✅ Fully Supported | No region limit |
-| **Stable Diffusion 2.x** | 🎨 Regional Prompter (SD/SDXL) | ✅ Fully Supported | No region limit |
-| **SDXL** | 🎨 Regional Prompter (SD/SDXL) | ✅ Fully Supported | No region limit |
-| **Flux** (all variants) | 🎨 Regional Prompter (Flux/Chroma, etc.) | ✅ Fully Supported & Optimized | 3-4 regions max recommended |
-| **Chroma** (Radiance, etc.) | 🎨 Regional Prompter (Flux/Chroma, etc.) | ✅ Architecture Supported | Likely 3-4 region limit (untested) |
-| **SD3 / SD3.5** | 🎨 Regional Prompter (Flux/Chroma, etc.) | ✅ Architecture Supported | No known region limit |
-| **Qwen-Image** | 🎨 Regional Prompter (Flux/Chroma, etc.) | 🟡 Experimental | Try it and report results! |
-
----
-
-## 💡 How to Use (Detailed)
-
-### Understanding the Canvas
-
-When you add a Regional Prompter node, you'll see:
-- **A canvas** (black rectangle) - This is your drawing area
-- **Prompt boxes** (text inputs) - Background + up to 4 regions
-- **Drawing controls** (below canvas) - Position and size your boxes
-
-### Drawing Your First Region
-
-1. **Start with background prompt:**
-   - Type: `"photo of a sunny beach"`
-   - This applies to the whole image
-
-2. **Add your first region:**
-   - In Region 1 prompt, type: `"woman in red dress"`
-   - Below the canvas, find the controls for Region 1
-   - Set: `x=100, y=200, width=300, height=400`
-   - You'll see a colored box appear on the canvas!
-
-3. **Adjust the box visually:**
-   - Change the `index` dropdown to select which region to edit
-   - Each region gets a unique color
-   - The 64px grid helps you align precisely
-
-4. **Add more regions:**
-   - Type in Region 2 prompt: `"beach umbrella"`
-   - Adjust x/y/width/height to position it
-   - Repeat for up to 4 regions total
-
-5. **Generate!**
-   - Connect to your sampler and generate
-   - Each prompt appears exactly where you drew it
-
-### Tips for Best Results
-
-#### For Flux Users:
-- ✅ **Keep "Soften Masks" ON** (it's on by default) - Uses 0.8 strength that works better than full strength
-- ✅ **Use 3-4 regions maximum** - More regions = quality degradation
-- ✅ **Increase CFG to 5-7** - Flux needs higher guidance for regional control
-- ✅ **Draw larger boxes** - Bigger regions = better control
-
-#### For Flux-Based Models (Chroma, etc.):
-- ✅ **Keep "Soften Masks" ON** - Works well with Flux-based architectures
-- ⚠️ **Likely 3-4 region limit** - Chroma is based on Flux, may have same limitations (untested)
-- ✅ **Start with Flux settings** - Increase CFG to 5-7, try and adjust
-
-#### For SDXL Users:
-- ✅ **Align to 64px grid** - Matches latent space boundaries
-- ✅ **No region limit** - Use as many as you need
-- ✅ **Normal CFG values** - 7-9 works great
-
-#### General Tips:
-- **Overlapping regions** are processed in order (Region 1 → 2 → 3 → 4)
-- **Strength slider** (0.0-10.0) controls region influence:
-  - `1.0` = Normal (default)
-  - `0.5` = Subtle hint
-  - `2.0+` = Strong emphasis
-  - `0.0` = Effectively disabled
-- **Leave prompts empty** to disable unused regions
-- **Fullscreen regions** (x=0, y=0, width=canvas, height=canvas) act as background
-
----
-
-## 📚 All Available Nodes
-
-### Enhanced (Easy Mode) - RECOMMENDED
-
-#### 🎨 Regional Prompter (SD/SDXL - Easy!)
-**Perfect for Stable Diffusion and SDXL**
-
-**Inputs:**
-- `clip` - CLIP model from your checkpoint
-- `background_prompt` - Overall scene description (multiline text)
-- `region1_prompt` through `region4_prompt` - What appears in each box (optional)
-
-**Outputs:**
-- `conditioning` - Connect to your sampler
-- `width`, `height` - Canvas dimensions (for reference)
-
-**How it works:** Type prompts directly, draw boxes, done! The node handles all CLIP encoding internally.
-
----
-
-#### 🎨 Regional Prompter (Flux/Chroma - Easy!)
-**Perfect for Flux, Chroma, and SD3**
-
-**Inputs:**
-- `clip` - CLIP model from your checkpoint *(from Load Checkpoint node)*
-- `width`, `height` - Output image dimensions *(just numbers - no latent needed!)*
-- `background_prompt` - Overall scene description (multiline text)
-- `region1_prompt` through `region4_prompt` - What appears in each box (optional)
-- `soften_masks` - Soften region edges (default: ON - RECOMMENDED!)
-
-**Outputs:**
-- `conditioning` - Connect to your KSampler's positive conditioning input
-
-**How the Workflow Connects:**
-```
-Load Checkpoint → CLIP
-                   ↓
-    Regional Prompter (Flux/Chroma)
-    (Set width/height here, e.g., 1024x1024)
-                   ↓
-              conditioning
-                   ↓
-            KSampler (positive input)
-```
-
-**💡 About "Soften Masks" (IMPORTANT!):**
-- ✅ **KEEP ON (default):** Softer region edges, better blending (0.8 strength + gentle feather)
-- ❌ **Turn OFF only if:** You want sharp, harsh region boundaries (1.0 strength, no feather)
-- **Why it's better:** Research shows softer masks (0.8) produce better results than full-strength (1.0) for Flux
-- **For other models:** Works well with mask-based models - try it ON first, disable only if you prefer sharper edges
-- **What feathering does:** Gentle edge blending (5-8 pixels) to avoid harsh boundaries - you can disable by turning this toggle OFF
-
-**💡 Pro Tip - Auto Width/Height:**
-You can **connect** the width/height outputs from your **Empty Latent Image** node directly to this node's width/height inputs! No need to type them manually - they'll stay in sync automatically.
-
----
-
-### Advanced Nodes (For Power Users)
-
-#### Multi Area Conditioning (SD/SDXL - Advanced)
-Area-based conditioning for traditional Stable Diffusion models. Requires external CLIP Text Encode nodes.
-
-**Inputs:**
-- `conditioning0` - Base/background conditioning (connect CLIPTextEncode here)
-- `conditioning1`, `conditioning2`, etc. - Regional conditioning (add more via right-click menu)
-
-**Outputs:**
-- `conditioning` - Combined regional conditioning
-- `resolutionX`, `resolutionY` - Canvas dimensions
-
-**Right-Click Menu:**
-- Insert input above/below current
-- Swap with input above/below
-- Remove currently selected input
-- Remove all unconnected inputs
-
----
-
-#### Multi Area Conditioning (Flux/Chroma - Advanced)
-Mask-based conditioning for modern models. Requires external CLIP Text Encode nodes.
-
-**Inputs:**
-- `conditioning0` - Base/background conditioning
-- `conditioning1`, `conditioning2`, etc. - Regional conditioning
-- `width`, `height` - Output dimensions
-- `mask_strength` - Mask intensity (0.7-0.85 recommended for Flux, 1.0 for others)
-
-**Output:**
-- `conditioning` - Combined mask-based conditioning
-
-**How it works:** Boxes are automatically converted to binary masks. You draw visually, the node handles mask generation.
-
----
-
-### Utility Nodes
-
-#### Conditioning Upscale
-Scale conditioning areas by a multiplier - perfect for hi-res fix workflows.
-
-**Example:** 512x512 regions × scalar=2 → 1024x1024 regions
-
----
-
-#### Conditioning Stretch
-Resize conditioning to fit new dimensions - more flexible than upscale.
-
-**Example:** Transform regions from 512x512 to 1024x768 (proportional scaling)
-
----
-
-#### Multi Latent Composite (Visual)
-Visual interface for compositing multiple latents with positioning and feathering.
-
-**Features:**
-- ✅ Automatic bounds checking and clipping
-- ✅ Channel compatibility validation
-- ✅ Smart feathering with gradient masks
-- ✅ Detailed warnings and info messages
-
----
-
-## 🔧 Advanced Techniques
-
-### Fullscreen/Background Conditioning
-Set a region to cover the entire canvas (`x=0, y=0, width=canvas_width, height=canvas_height`) to make it fullscreen. This is perfect for background prompts that should influence the whole image.
-
-### Grid Alignment
-The 64px grid overlay helps you align regions to latent space boundaries (VAE works in 8x downscaled space, 64px = 8 latent pixels).
-
-### Strength Control
-Every region has a strength slider (0.0-10.0):
-- **1.0** - Normal strength (default)
-- **0.5** - Subtle influence (region blends more with background)
-- **2.0+** - Strong influence (region dominates)
-- **0.0** - Effectively disabled
-
-### Overlapping Regions
-Regions are processed in order. If boxes overlap:
-- Background applies first (fullscreen)
-- Region 1 applies on top
-- Region 2 applies on top of Region 1
-- And so on...
-
-The last region "wins" in overlapping areas (for mask-based conditioning).
-
-### Dynamic Sizing
-**Important:** The canvas size can be different from your output size!
-
-For example:
-- Draw on a 512x512 canvas
-- Generate at 1024x1024 output
-- Regions automatically scale 2x
-
-This makes it easy to design compositions at lower resolution, then generate at higher resolution.
-
----
-
-## ❓ Troubleshooting
-
-### "Workflow metadata missing" error
-**Cause:** ComfyUI hasn't saved your workflow yet
-**Fix:** Save the workflow (Ctrl+S or Cmd+S), then reload the page
-
-### Canvas doesn't show boxes I drew
-**Cause:** Workflow not saved, or coordinates are outside canvas
-**Fix:**
-1. Save and reload workflow
-2. Check that x+width ≤ canvas width and y+height ≤ canvas height
-3. Select the region using the `index` dropdown to see where it is
-
-### Flux regions look harsh or over-defined
-**Cause:** Flux Optimize is disabled, or using advanced node with mask_strength=1.0
-**Fix:**
-- Use the Easy node with Flux Optimize ON
-- Or set mask_strength to 0.7-0.85 in the advanced node
-
-### Too many regions = bad quality (Flux)
-**Cause:** Flux struggles with more than 4 regions
-**Fix:** Combine related elements into single regions, or use fewer boxes
-
-### Region has no effect
-**Cause:** Prompt is empty, strength is 0.0, or box is too small
-**Fix:**
-1. Make sure the region prompt has text
-2. Check strength slider is at least 0.5
-3. Make boxes at least 64x64 pixels
-
----
-
-## 📝 Changelog
-
-### Version 3.1 (November 22, 2025)
-- ✨ **NEW:** Enhanced "Easy" nodes with inline prompts!
-  - 🎨 Regional Prompter (SD/SDXL - Easy!)
-  - 🎨 Regional Prompter (Flux/Chroma - Easy!)
-- ✨ **NEW:** No more external CLIP Text Encode nodes needed
-- ✨ **NEW:** Flux-optimized mask strength (0.8) and feathering
-- ✨ **NEW:** Up to 4 regions + background in one node
-- 📚 **DOCS:** Completely rewritten README for user-friendliness
-- 📚 **DOCS:** Added CONTEXT.md for development learnings
-
-### Version 3.0 (November 22, 2025)
-- ✨ **NEW:** MultiAreaConditioningMask for Flux/Chroma/SD3 support
-- ✨ **NEW:** Comprehensive error handling and validation
-- ✨ **NEW:** Bounds checking for MultiLatentComposite
-- ✨ **NEW:** Tooltips and descriptions on all inputs
-- 🔧 **FIX:** Modernized JavaScript loading (no more file copying!)
-- 🔧 **FIX:** Removed debug console.log statements
-- 🔧 **FIX:** Fixed graph reference bug in background drawing
-- 📚 **DOCS:** Complete compatibility matrix and examples
-- 🚀 **PERF:** Improved tensor operations and validation
-
-### Version 2.4 (Original)
-- Visual area conditioning interface
-- MultiLatentComposite with feathering
-- ConditioningUpscale and ConditioningStretch utilities
-
----
-
-## 🤝 Contributing
-
-Found a bug? Have a feature request?
-[Open an issue](https://github.com/EnragedAntelope/ComfyUI_RegionalConditioning/issues) on GitHub!
-
-**Tested with:**
-- ComfyUI 0.3.71+
-- Stable Diffusion 1.5, SD 2.x, SDXL
-- Flux.1-dev, Flux.1-schnell
-- Chroma1-Radiance
-
----
-
-## 📄 License
-
-**GLWT (Good Luck With That) Public License**
-
-See [LICENSE](LICENSE) file for the full text.
-
-TL;DR: Use it however you want, but don't blame us if it breaks! 😄
-
----
+- **Multi Area Conditioning**: Area-based, requires external CLIP encode
+- **Multi Area Conditioning Mask**: Mask-based, requires external CLIP encode
+- **Multi Latent Composite**: Visual latent compositing with feathering
 
 ## Credits
 
-Based on the visual area conditioning concept by [Davemane42](https://github.com/Davemane42).
+Based on visual area conditioning by [Davemane42](https://github.com/Davemane42).
 
 Maintained by EnragedAntelope - [github.com/EnragedAntelope/ComfyUI_RegionalConditioning](https://github.com/EnragedAntelope/ComfyUI_RegionalConditioning)
 
----
+## License
 
-## 📸 Complete Workflow Examples
-
-### Easy Mode Workflow (RECOMMENDED)
-The simplest possible setup - only 3 nodes needed!
-
-```
-Load Checkpoint
-    ├─→ CLIP ─→ Regional Prompter (Flux/Chroma - Easy!)
-    │             ├─ Set width: 1024
-    │             ├─ Set height: 1024
-    │             ├─ background_prompt: "your scene description"
-    │             ├─ region1_prompt: "what goes in box 1"
-    │             ├─ region2_prompt: "what goes in box 2"
-    │             └─ soften_masks: ✅ ON (recommended!)
-    │
-    ├─→ MODEL ──┐
-    └─→ VAE ───┐│
-               ││
-    Regional Prompter → conditioning
-               ││
-               ↓↓
-            KSampler
-         (positive: conditioning from Regional Prompter)
-         (negative: empty or your negative prompt)
-         (model: from Load Checkpoint)
-         (latent: Empty Latent Image at matching size)
-               ↓
-          VAE Decode
-               ↓
-          Save Image
-```
-
-**Key Points:**
-- ✅ Width/height in the Regional Prompter should match your Empty Latent Image size
-- 💡 **PRO TIP:** Connect width/height outputs from Empty Latent Image → Regional Prompter for auto-sync!
-- ✅ No latent input needed on the Regional Prompter - it just needs the numbers!
-- ✅ The node outputs CONDITIONING, not an image - connect to KSampler's positive input
-- ✅ Keep "Soften Masks" ON for better results (especially Flux and Flux-based models)
-
-### Advanced Mode Workflow (For Power Users)
-When you need shared CLIP encodings or more control:
-
-```
-Load Checkpoint → CLIP → CLIPTextEncode (background)
-                            ↓
-                     CLIPTextEncode (region 1)
-                            ↓
-                     CLIPTextEncode (region 2)
-                            ↓
-            Multi Area Conditioning (collects all)
-                            ↓
-                   conditioning output
-                            ↓
-                        KSampler → VAE Decode → Save Image
-```
-
-**When to use Advanced Mode:**
-- You want to share CLIP encodings across multiple nodes
-- You need manual control over mask strength per region
-- You're doing complex prompt engineering with multiple text encode nodes
-
----
-
-**Enjoy precise regional control in your ComfyUI workflows! 🎨**
-
-**Questions? Check the troubleshooting section above, or open an issue on GitHub.**
+MIT License - use freely in personal and commercial projects.

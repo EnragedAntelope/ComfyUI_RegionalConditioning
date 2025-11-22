@@ -134,7 +134,7 @@ export function getDrawColor(percent, alpha) {
 export function computeCanvasSize(node, size) {
 	if (node.widgets[0].last_y == null) return;
 
-	const MIN_SIZE = 200;
+	const MIN_SIZE = 450;  // Increased from 200 to prevent widget overlap with canvas
 
 	let y = LiteGraph.NODE_WIDGET_HEIGHT * Math.max(node.inputs.length, node.outputs.length) + 5;
 	let freeSpace = size[1] - y;
