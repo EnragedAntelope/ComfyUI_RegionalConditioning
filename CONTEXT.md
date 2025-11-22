@@ -86,8 +86,27 @@ for prompt in prompts:
 - ✅ **ALL models** use the same encoding method - no special cases needed
 - ⚠️ **Don't assume encoder count from architecture** - Chroma proves Flux-based ≠ dual encoder!
 
+**Critical Bugfixes (November 2025):**
+- 🐛 **Variable Shadowing Bug:** Fixed `IndexError: list index out of range` crash in feathering loop
+  - **Cause:** Inner loop variable `i` was shadowing outer loop variable `i`
+  - **Symptom:** Crash when accessing `encoded_conditionings[i]` after feathering loop
+  - **Fix:** Renamed inner loop variable to `edge_idx` (RegionalPrompting.py:397)
+  - **Impact:** RegionalPrompterFlux would crash on execution with feathering enabled
+- 🔧 **Missing WEB_DIRECTORY Export:** Canvas wasn't loading at all
+  - **Cause:** No `WEB_DIRECTORY` export in `__init__.py` - ComfyUI couldn't find JS files
+  - **Symptom:** Canvas widget completely invisible, no drawing interface shown
+  - **Fix:** Added `WEB_DIRECTORY = os.path.join(os.path.dirname(__file__), "js")` export
+  - **Impact:** JavaScript extensions weren't being loaded, canvas completely broken
+- 🎨 **Node Naming:** Removed "EASY!" terminology and made names model-agnostic
+  - **Before:** "Regional Prompter (Flux/Chroma - Easy!)" ← Model-specific and gimmicky
+  - **After:** "Regional Prompter (Mask-Based)" ← Describes technique, not specific models
+  - **Reasoning:** Mask-based conditioning works for Flux, Chroma, SD3, Qwen-Image, etc.
+  - **Also Updated:** "SD/SDXL - Easy!" → "Area-Based" (describes conditioning method)
+
 #### JavaScript UI
-- **Loading:** Modern ComfyUI auto-loads from `/js/` folder
+- **Loading:** ComfyUI loads extensions from `/js/` folder **ONLY if `WEB_DIRECTORY` is exported in `__init__.py`**
+  - **CRITICAL:** Must export `WEB_DIRECTORY = os.path.join(os.path.dirname(__file__), "js")`
+  - Without this export, JavaScript files are completely ignored - canvas won't appear at all!
 - **Canvas:** Shared drawing code between area-based and mask-based nodes
 - **Grid:** 64px grid overlay helps users align to latent boundaries
 - **Color Coding:** Each region gets unique color based on index/length ratio
