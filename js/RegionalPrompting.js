@@ -257,15 +257,14 @@ app.registerExtension({
 					function (v, _, node) {
 						let values = node.properties["values"]
 
-						// Widget indices are after canvas and index
+						// Widget indices are after canvas and region selector
 						const offset = indexWidgetStartPos + 1;
-						if (node.widgets.length > offset + 4) {
-							node.widgets[offset].value = values[v][0]
-							node.widgets[offset + 1].value = values[v][1]
-							node.widgets[offset + 2].value = values[v][2]
-							node.widgets[offset + 3].value = values[v][3]
-							if (!values[v][4]) {values[v][4] = 2.0}
-							node.widgets[offset + 4].value = values[v][4]
+						if (node.widgets.length > offset + 3) {
+							// Update box dimension widgets (strength removed - now per-region inputs in Python)
+							node.widgets[offset].value = values[v][0]      // box_x
+							node.widgets[offset + 1].value = values[v][1]  // box_y
+							node.widgets[offset + 2].value = values[v][2]  // box_w
+							node.widgets[offset + 3].value = values[v][3]  // box_h
 						}
 					},
 					{ step: 10, max: 1 }
@@ -275,7 +274,7 @@ app.registerExtension({
 				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
 				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
 				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
-				CUSTOM_INT(this, "strength", 2.0, function (v, _, node) {transformFunc(this, v, node, 4)}, {"min": 0.0, "max": 10.0, "step": 0.1, "precision": 2})
+				// Strength slider removed - now using per-region strength inputs from Python
 
 				this.onRemoved = function () {
 					for (let y in this.widgets) {
@@ -349,15 +348,14 @@ app.registerExtension({
 					function (v, _, node) {
 						let values = node.properties["values"]
 
-						// Widget indices are after canvas and index
+						// Widget indices are after canvas and region selector
 						const offset = indexWidgetStartPos + 1;
-						if (node.widgets.length > offset + 4) {
-							node.widgets[offset].value = values[v][0]
-							node.widgets[offset + 1].value = values[v][1]
-							node.widgets[offset + 2].value = values[v][2]
-							node.widgets[offset + 3].value = values[v][3]
-							if (!values[v][4]) {values[v][4] = 2.0}
-							node.widgets[offset + 4].value = values[v][4]
+						if (node.widgets.length > offset + 3) {
+							// Update box dimension widgets (strength removed - now per-region inputs in Python)
+							node.widgets[offset].value = values[v][0]      // box_x
+							node.widgets[offset + 1].value = values[v][1]  // box_y
+							node.widgets[offset + 2].value = values[v][2]  // box_w
+							node.widgets[offset + 3].value = values[v][3]  // box_h
 						}
 					},
 					{ step: 10, max: 1 }
@@ -367,7 +365,7 @@ app.registerExtension({
 				CUSTOM_INT(this, "box_y", 0, function (v, _, node) {transformFunc(this, v, node, 1)})
 				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)})
 				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)})
-				CUSTOM_INT(this, "strength", 2.0, function (v, _, node) {transformFunc(this, v, node, 4)}, {"min": 0.0, "max": 10.0, "step": 0.1, "precision": 2})
+				// Strength slider removed - now using per-region strength inputs from Python
 
 				this.onRemoved = function () {
 					for (let y in this.widgets) {
