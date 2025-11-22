@@ -30,7 +30,18 @@
 - **Region Limit (Flux):** Flux works best with 3-4 regions maximum (confirmed)
 - **Region Limit (Chroma):** Likely 3-4 regions too since Chroma is Flux-based (UNTESTED - needs user confirmation)
 - **Region Limit (SD3/SD3.5):** No known limit
-- **CFG Guidance (Flux):** Use 1.0-3.5 for regional prompting (Flux normally likes CFG 1.0; higher values like 5+ cause blur)
+- **CFG Guidance (Flux):** **Base Flux uses CFG 1.0 ONLY with NO negative prompt** (this is critical!)
+  - Flux.1-dev/schnell are designed for CFG 1.0 baseline
+  - Higher CFG values cause blur and artifacts
+  - Do NOT use negative prompts with Base Flux
+  - Dev variants may support higher CFG, but start with 1.0
+- **Per-Region Strength (CRITICAL DISCOVERY - November 2025):**
+  - **Each region needs its own strength control** - global strength doesn't work!
+  - User testing showed: Both regions at 2.0 = car yes, giraffe no
+  - Car at 2.0, giraffe at 4.0 = BOTH appear (red vehicle + giraffe)
+  - **Implementation:** Added region1_strength, region2_strength, region3_strength, region4_strength inputs
+  - **Recommended defaults:** 2.5, 3.5, 4.0, 4.0 (increasing strength for later regions)
+  - **Why:** Background conditioning competes with regions - later regions need higher strength
 
 #### CLIP Encoding (Inline Prompts)
 - **Method:** `clip.tokenize(prompt)` → `clip.encode_from_tokens(tokens, return_pooled=True)`

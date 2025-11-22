@@ -209,20 +209,48 @@ class RegionalPrompterFlux:
                 }),
             },
             "optional": {
+                "region1_strength": ("FLOAT", {
+                    "default": 2.5,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "step": 0.1,
+                    "tooltip": "Region 1 conditioning strength (2.5-4.0 recommended for Flux)"
+                }),
                 "region2_prompt": ("STRING", {
                     "default": "street vendor",
                     "multiline": True,
                     "tooltip": "Region 2 - Second region/box (see canvas below)"
+                }),
+                "region2_strength": ("FLOAT", {
+                    "default": 3.5,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "step": 0.1,
+                    "tooltip": "Region 2 conditioning strength (increase if region doesn't show)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
                     "tooltip": "Region 3 - Third region/box (see canvas below)"
                 }),
+                "region3_strength": ("FLOAT", {
+                    "default": 4.0,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "step": 0.1,
+                    "tooltip": "Region 3 conditioning strength (increase if region doesn't show)"
+                }),
                 "region4_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
                     "tooltip": "Region 4 - Fourth region/box (see canvas below)"
+                }),
+                "region4_strength": ("FLOAT", {
+                    "default": 4.0,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "step": 0.1,
+                    "tooltip": "Region 4 conditioning strength (increase if region doesn't show)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
@@ -238,22 +266,25 @@ Quick Start:
 1. Connect CLIP from checkpoint
 2. Set width/height to match your latent exactly
 3. Type prompts (background + regions)
-4. Draw/adjust boxes on canvas
-5. Use CFG 5-7 for Flux regional prompting (higher than standard 1.0-3.5)
+4. Adjust per-region strength (default: 2.5, 3.5, 4.0, 4.0)
+5. Draw/adjust boxes on canvas
+6. Use CFG 1.0 for Base Flux (no negative prompt)
 
-Tips: Increase strength (2.0-4.0) if regions don't show. 3-4 regions max for Flux."""
+Tips: Increase per-region strength if regions don't show. 3-4 regions max for Flux."""
 
     def encode_regions_flux(self, clip, width, height, soften_masks, background_prompt, region1_prompt,
                            extra_pnginfo, unique_id,
-                           region2_prompt="", region3_prompt="", region4_prompt=""):
+                           region1_strength=2.5, region2_prompt="", region2_strength=3.5,
+                           region3_prompt="", region3_strength=4.0, region4_prompt="", region4_strength=4.0):
         """Encode all prompts and apply mask-based regional conditioning for Flux/Chroma/SD3."""
 
         # Default template boxes (if workflow not saved yet)
         # Region 1 (red sports car): left side, 400x500px starting at (100, 300)
         # Region 2 (street vendor): right side, 350x500px starting at (560, 300)
+        # NOTE: Strength values in 'values' array are now ignored - using per-region strength inputs instead
         values = [
-            [100, 300, 400, 500, 2.0],   # Region 1 - increased strength
-            [560, 300, 350, 500, 2.0]    # Region 2 - increased strength
+            [100, 300, 400, 500, 0.0],   # Region 1 - strength ignored (using region1_strength input)
+            [560, 300, 350, 500, 0.0]    # Region 2 - strength ignored (using region2_strength input)
         ]
 
         # Get region data from UI (overrides defaults if workflow saved)
@@ -314,6 +345,9 @@ Tips: Increase strength (2.0-4.0) if regions don't show. 3-4 regions max for Flu
             for t in encoded_conditionings[0]:
                 combined_conditioning.append(t)
 
+        # Per-region strength values from inputs (not canvas)
+        region_strengths = [region1_strength, region2_strength, region3_strength, region4_strength]
+
         # Process each region with masks
         latent_width = width // 8
         latent_height = height // 8
@@ -328,7 +362,8 @@ Tips: Increase strength (2.0-4.0) if regions don't show. 3-4 regions max for Flu
             try:
                 x, y = int(values[i-1][0]), int(values[i-1][1])
                 w, h = int(values[i-1][2]), int(values[i-1][3])
-                strength = float(values[i-1][4]) if len(values[i-1]) > 4 else 2.0
+                # Use per-region strength from inputs instead of canvas values
+                strength = region_strengths[i-1] if i-1 < len(region_strengths) else 2.5
             except (IndexError, ValueError, TypeError):
                 continue
 
@@ -405,7 +440,7 @@ Tips: Increase strength (2.0-4.0) if regions don't show. 3-4 regions max for Flu
                 combined_conditioning.append(n)
 
         print(f"   ✅ Generated {len(combined_conditioning)} conditioning blocks")
-        print(f"   💡 Tip: For Flux regional prompting, use CFG 5-7 (higher than standard 1.0-3.5)\n")
+        print(f"   💡 Tip: For Base Flux, use CFG 1.0 with no negative prompt\n")
 
         return (combined_conditioning,)
 
