@@ -193,13 +193,6 @@ class RegionalPrompterFlux:
                     "step": 64,
                     "tooltip": "Output height - must match your latent/sampler"
                 }),
-                "background_strength": ("FLOAT", {
-                    "default": 0.5,
-                    "min": 0.0,
-                    "max": 10.0,
-                    "step": 0.1,
-                    "tooltip": "Background conditioning strength (0.3-0.7 for Flux, lower = regions show more)"
-                }),
                 "soften_masks": ("BOOLEAN", {
                     "default": True,
                     "tooltip": "Enable feathering at region edges - recommended ON"
@@ -209,19 +202,26 @@ class RegionalPrompterFlux:
                     "multiline": True,
                     "tooltip": "Scene description (applies to entire image as base)"
                 }),
+            },
+            "optional": {
+                "background_strength": ("FLOAT", {
+                    "default": 0.5,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "step": 0.1,
+                    "tooltip": "Background conditioning strength (0.3-0.7 for Flux, lower = regions show more)"
+                }),
                 "region1_prompt": ("STRING", {
                     "default": "red sports car",
                     "multiline": True,
                     "tooltip": "Region 1 - First region/box (see canvas below)"
                 }),
-            },
-            "optional": {
                 "region1_strength": ("FLOAT", {
-                    "default": 5.0,
+                    "default": 2.5,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.5,
-                    "tooltip": "Region 1 strength (5-8 for Flux, increase if region doesn't show)"
+                    "step": 0.1,
+                    "tooltip": "Region 1 strength (2-4 for Flux, too high = soft/lose details)"
                 }),
                 "region2_prompt": ("STRING", {
                     "default": "giraffe wearing sunglasses",
@@ -229,11 +229,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 2 - Second region/box (see canvas below)"
                 }),
                 "region2_strength": ("FLOAT", {
-                    "default": 6.0,
+                    "default": 3.5,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.5,
-                    "tooltip": "Region 2 strength (6-9 for Flux, increase if region doesn't show)"
+                    "step": 0.1,
+                    "tooltip": "Region 2 strength (3-5 for Flux, too high = soft/lose details)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
@@ -241,11 +241,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 3 - Third region/box (see canvas below)"
                 }),
                 "region3_strength": ("FLOAT", {
-                    "default": 7.0,
+                    "default": 4.0,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.5,
-                    "tooltip": "Region 3 strength (7-10 for Flux, increase if region doesn't show)"
+                    "step": 0.1,
+                    "tooltip": "Region 3 strength (3-6 for Flux, too high = soft/lose details)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
@@ -253,11 +253,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 4 - Fourth region/box (see canvas below)"
                 }),
                 "region4_strength": ("FLOAT", {
-                    "default": 8.0,
+                    "default": 4.5,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.5,
-                    "tooltip": "Region 4 strength (8-10 for Flux, increase if region doesn't show)"
+                    "step": 0.1,
+                    "tooltip": "Region 4 strength (4-7 for Flux, too high = soft/lose details)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
