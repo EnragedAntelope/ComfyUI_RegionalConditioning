@@ -3,7 +3,7 @@
 // All-in-one nodes with CLIP input and prompt boxes
 
 import { app } from "/scripts/app.js";
-import {CUSTOM_INT, transformFunc, swapInputs, renameNodeInputs, removeNodeInputs, getDrawColor, computeCanvasSize} from "./utils.js"
+import {CUSTOM_INT, transformFunc, swapInputs, renameNodeInputs, removeNodeInputs, getDrawColor, computeCanvasSize, calculateDefaultRegions} from "./utils.js"
 
 // Shared canvas function for both enhanced nodes
 function addEasyRegionCanvas(node, app) {
@@ -220,15 +220,12 @@ app.registerExtension({
 			nodeType.prototype.onNodeCreated = function () {
 				const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
-				this.setProperty("width", 512)
-				this.setProperty("height", 512)
-				// Default template: Regions in left & right thirds
-				// Region 1 (car): left third, 140x300px starting at (40, 100) - covers 8%-35% of width
-				// Region 2 (giraffe): right third, 140x350px starting at (360, 75) - covers 70%-98% of width
-				this.setProperty("values", [
-					[40, 100, 140, 300, 2.0],   // Region 1 - left third
-					[360, 75, 140, 350, 2.0]    // Region 2 - right third
-				])
+				const defaultWidth = 512;
+				const defaultHeight = 512;
+				this.setProperty("width", defaultWidth)
+				this.setProperty("height", defaultHeight)
+				// Calculate percentage-based defaults (divisible by 8)
+				this.setProperty("values", calculateDefaultRegions(defaultWidth, defaultHeight))
 
 				this.selected = false
 
@@ -325,15 +322,12 @@ app.registerExtension({
 			nodeType.prototype.onNodeCreated = function () {
 				const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
-				this.setProperty("width", 1024)
-				this.setProperty("height", 1024)
-				// Default template: Regions in left & right thirds
-				// Region 1 (car): left third, 280x600px starting at (80, 200) - covers 8%-35% of width
-				// Region 2 (giraffe): right third, 280x700px starting at (720, 150) - covers 70%-98% of width
-				this.setProperty("values", [
-					[80, 200, 280, 600, 2.0],   // Region 1 - left third
-					[720, 150, 280, 700, 2.0]   // Region 2 - right third
-				])
+				const defaultWidth = 1024;
+				const defaultHeight = 1024;
+				this.setProperty("width", defaultWidth)
+				this.setProperty("height", defaultHeight)
+				// Calculate percentage-based defaults (divisible by 8)
+				this.setProperty("values", calculateDefaultRegions(defaultWidth, defaultHeight))
 
 				this.selected = false
 
