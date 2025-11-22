@@ -44,6 +44,11 @@
 - **Canvas:** Shared drawing code between area-based and mask-based nodes
 - **Grid:** 64px grid overlay helps users align to latent boundaries
 - **Color Coding:** Each region gets unique color based on index/length ratio
+- **Canvas Widget Critical Pattern:**
+  - Must set `canvas.width` and `canvas.height` attributes (not just CSS styles)
+  - CSS controls display size, attributes control internal drawing resolution
+  - Force initial size computation with `setTimeout(() => computeCanvasSize(node, node.size), 100)`
+  - Always provide fallback values for `node.canvasHeight`, `node.properties["values"]`, etc.
 
 #### Workflow Metadata
 - **Source:** `extra_pnginfo["workflow"]["nodes"]` contains node properties
@@ -259,21 +264,35 @@ except Exception as e:
 
 ## Known Issues & Workarounds
 
-### Issue: Workflow Metadata Missing
-- **Symptom:** "Workflow metadata missing" error on first run
-- **Cause:** ComfyUI doesn't populate `extra_pnginfo` until workflow saved
-- **Workaround:** Save workflow (Ctrl+S), reload page
-- **Fix:** Fallback to sensible defaults (512x512 for SD, 1024x1024 for Flux)
+### ✅ FIXED: Canvas Not Visible (November 2025)
+- **Symptom:** "Where exactly do you draw boxes? I see nothing."
+- **Cause:** Canvas element missing explicit width/height attributes, computeCanvasSize not called initially
+- **Fix:**
+  - Set canvas.width and canvas.height attributes (not just CSS styles)
+  - Force initial canvas size computation with setTimeout
+  - Added fallback dimensions (200px minimum)
+  - Added safeguards for empty values array
+- **Status:** Fixed in commit 747c881
 
-### Issue: Canvas Not Updating
-- **Symptom:** Boxes don't appear when drawn
-- **Cause:** `app.graph._nodes` reference bug in old JavaScript
-- **Fix:** Use `app.graph._nodes` consistently (fixed in modernization)
+### ✅ FIXED: Regions Not Showing (November 2025)
+- **Symptom:** Only background appears, regions (sports car, vendor) don't render
+- **Cause:** `extra_pnginfo` empty on first run (before workflow saved), no default boxes
+- **Fix:**
+  - Added default template boxes matching JavaScript defaults
+  - RegionalPrompterSimple: `[[50, 150, 200, 250, 1.0], [280, 150, 180, 250, 1.0]]`
+  - RegionalPrompterFlux: `[[100, 300, 400, 500, 1.0], [560, 300, 350, 500, 1.0]]`
+  - Boxes only used if workflow not saved yet
+- **Status:** Fixed in commit 747c881
 
-### Issue: Flux Regions Too Strong
-- **Symptom:** Harsh boundaries, over-defined regions
-- **Cause:** Mask strength set to 1.0 instead of 0.7-0.85
-- **Fix:** RegionalPrompterFlux uses 0.8 by default with `flux_optimize=True`
+### ✅ FIXED: Wrong CLIP Encoder for Chroma/Qwen (November 2025)
+- **Symptom:** mat1/mat2 tensor shape mismatch error (when wrong CLIP selected)
+- **Cause:** Assumed all mask-based models need dual encoders like Flux
+- **Fix:**
+  - Detect Flux via `hasattr(clip, 'encode_from_tokens_scheduled')`
+  - Flux: dual encoder (CLIP-L + T5-XXL) with guidance
+  - Chroma/Qwen/SD3: single encoder (standard encoding)
+- **Reality Check:** User error (SDXL CLIP loader), but encoder detection still improved
+- **Status:** Fixed in commit 747c881
 
 ---
 
@@ -283,8 +302,11 @@ except Exception as e:
 - [x] SD 1.5 area-based conditioning
 - [x] SDXL area-based conditioning
 - [x] Flux mask-based conditioning (with 0.8 strength)
+- [x] Flux dual-encoder CLIP detection and encoding
 - [x] Inline CLIP encoding matches external CLIPTextEncode
+- [x] Canvas widget visibility and proper rendering (November 2025)
 - [x] Canvas drawing and box visualization
+- [x] Default template boxes work without saving workflow (November 2025)
 - [x] Error handling with missing metadata
 - [x] Bounds checking in MultiLatentComposite
 
