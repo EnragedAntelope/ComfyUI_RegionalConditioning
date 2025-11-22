@@ -185,7 +185,13 @@ app.registerExtension({
 
 				this.setProperty("width", 512)
 				this.setProperty("height", 512)
-				this.setProperty("values", [[0, 0, 0, 0, 1.0], [0, 0, 0, 0, 1.0]])
+				// Default template: Two example boxes pre-drawn
+				// Region 1 (red sports car): left side, 200x250px starting at (50, 150)
+				// Region 2 (street vendor): right side, 180x250px starting at (280, 150)
+				this.setProperty("values", [
+					[50, 150, 200, 250, 1.0],   // Region 1
+					[280, 150, 180, 250, 1.0]    // Region 2
+				])
 
 				this.selected = false
 
@@ -262,7 +268,13 @@ app.registerExtension({
 
 				this.setProperty("width", 1024)
 				this.setProperty("height", 1024)
-				this.setProperty("values", [[0, 0, 0, 0, 1.0], [0, 0, 0, 0, 1.0]])
+				// Default template: Two example boxes pre-drawn
+				// Region 1 (red sports car): left side, 400x500px starting at (100, 300)
+				// Region 2 (street vendor): right side, 350x500px starting at (560, 300)
+				this.setProperty("values", [
+					[100, 300, 400, 500, 1.0],   // Region 1
+					[560, 300, 350, 500, 1.0]    // Region 2
+				])
 
 				this.selected = false
 
@@ -317,6 +329,35 @@ app.registerExtension({
 					this.selected = false
 				}
 
+				// Dynamic canvas sync: Watch width/height widgets and update canvas properties
+				// Find width and height widgets (they're created from INPUT_TYPES)
+				const widthWidget = this.widgets.find(w => w.name === "width");
+				const heightWidget = this.widgets.find(w => w.name === "height");
+
+				if (widthWidget) {
+					const originalWidthCallback = widthWidget.callback;
+					widthWidget.callback = function(value) {
+						// Update canvas property to match
+						this.properties["width"] = value;
+						// Call original callback if it exists
+						if (originalWidthCallback) {
+							originalWidthCallback.apply(this, arguments);
+						}
+					}.bind(this);
+				}
+
+				if (heightWidget) {
+					const originalHeightCallback = heightWidget.callback;
+					heightWidget.callback = function(value) {
+						// Update canvas property to match
+						this.properties["height"] = value;
+						// Call original callback if it exists
+						if (originalHeightCallback) {
+							originalHeightCallback.apply(this, arguments);
+						}
+					}.bind(this);
+				}
+
 				return r;
 			};
 		}
@@ -324,6 +365,16 @@ app.registerExtension({
 	loadedGraphNode(node, _) {
 		if (node.type === "RegionalPrompterFlux") {
 			node.widgets[node.index].options["max"] = node.properties["values"].length-1
+
+			// Sync canvas properties with widget values on load
+			const widthWidget = node.widgets.find(w => w.name === "width");
+			const heightWidget = node.widgets.find(w => w.name === "height");
+			if (widthWidget) {
+				node.properties["width"] = widthWidget.value;
+			}
+			if (heightWidget) {
+				node.properties["height"] = heightWidget.value;
+			}
 		}
 	},
 

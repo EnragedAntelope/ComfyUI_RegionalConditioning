@@ -22,31 +22,31 @@ class RegionalPrompterSimple:
             "required": {
                 "clip": ("CLIP", {"tooltip": "CLIP model from your checkpoint"}),
                 "background_prompt": ("STRING", {
-                    "default": "photo of a beautiful landscape",
+                    "default": "photo of a city street, high quality",
                     "multiline": True,
                     "tooltip": "Background/scene description (applies to whole image)"
                 }),
                 "region1_prompt": ("STRING", {
-                    "default": "",
+                    "default": "red sports car",
                     "multiline": True,
-                    "tooltip": "Prompt for first region/box (leave empty to disable)"
+                    "tooltip": "Prompt for first region/box (clear this to disable)"
                 }),
             },
             "optional": {
                 "region2_prompt": ("STRING", {
-                    "default": "",
+                    "default": "street vendor",
                     "multiline": True,
-                    "tooltip": "Prompt for second region (optional)"
+                    "tooltip": "Prompt for second region (optional - clear this to disable)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for third region (optional)"
+                    "tooltip": "Prompt for third region (optional - clear this to disable)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for fourth region (optional)"
+                    "tooltip": "Prompt for fourth region (optional - clear this to disable)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
@@ -186,35 +186,35 @@ class RegionalPrompterFlux:
                     "tooltip": "Output image height"
                 }),
                 "background_prompt": ("STRING", {
-                    "default": "high quality photo",
+                    "default": "photo of a city street, high quality",
                     "multiline": True,
                     "tooltip": "Background/scene description (applies to whole image)"
                 }),
                 "region1_prompt": ("STRING", {
-                    "default": "",
+                    "default": "red sports car",
                     "multiline": True,
                     "tooltip": "Prompt for first region/box (leave empty to disable)"
                 }),
-                "flux_optimize": ("BOOLEAN", {
+                "use_soft_masks": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Optimize masks for Flux (softer masks, better blending)"
+                    "tooltip": "Enable soft masks (0.8 strength + feathering). Recommended for Flux (confirmed), may help Chroma/SD3. Disable for full-strength masks (1.0)"
                 }),
             },
             "optional": {
                 "region2_prompt": ("STRING", {
-                    "default": "",
+                    "default": "street vendor",
                     "multiline": True,
-                    "tooltip": "Prompt for second region (optional)"
+                    "tooltip": "Prompt for second region (optional - clear this to disable)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for third region (optional - Flux works best with 3-4 regions max)"
+                    "tooltip": "Prompt for third region (optional - note: Flux works best with 3-4 regions max)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for fourth region (optional - Flux works best with 3-4 regions max)"
+                    "tooltip": "Prompt for fourth region (optional - note: Flux works best with 3-4 regions max)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
@@ -224,34 +224,38 @@ class RegionalPrompterFlux:
     RETURN_NAMES = ("conditioning",)
     FUNCTION = "encode_regions_flux"
     CATEGORY = "Davemane42/Enhanced"
-    DESCRIPTION = """🎨 ALL-IN-ONE Flux/Chroma Regional Prompting (EASY MODE!)
+    DESCRIPTION = """🎨 ALL-IN-ONE Flux/Chroma/SD3 Regional Prompting (EASY MODE!)
 
 Just type your prompts and draw boxes - that's it!
 
 ✅ No external CLIP Text Encode nodes needed
 ✅ Simple workflow: CLIP → This Node → Sampler
-✅ Optimized for Flux (softer masks, better blending)
+✅ Soft masks option (0.8 strength + feathering)
 ✅ Up to 4 regions + background (Flux works best with 3-4 max)
 ✅ Visual box drawing interface
+✅ Comes with example prompts pre-filled!
 
 How to use:
 1. Connect CLIP from your checkpoint
-2. Type background prompt (whole image)
-3. Type region prompts (for each box)
-4. Draw boxes on canvas
-5. Enable "Flux Optimize" for best results
-6. Connect to sampler!
+2. Review example prompts (or replace with your own)
+3. Draw boxes on canvas for each region
+4. Enable "Soft Masks" for Flux (recommended)
+5. Connect to sampler!
 
 Flux Tips:
 • Use 3-4 regions maximum for best results
-• Enable Flux Optimize for softer blending
+• Keep "Soft Masks" enabled (0.8 strength works better than 1.0)
 • Increase CFG to 5-7 (vs typical 3-5)
 • Draw larger regions for better control
+
+Chroma/SD3 Tips:
+• Try "Soft Masks" ON first, disable if results look washed out
+• No region limit (unlike Flux)
 
 Compatible: Flux, Chroma, SD3, SD3.5"""
 
     def encode_regions_flux(self, clip, width, height, background_prompt, region1_prompt,
-                           flux_optimize, extra_pnginfo, unique_id,
+                           use_soft_masks, extra_pnginfo, unique_id,
                            region2_prompt="", region3_prompt="", region4_prompt=""):
         """Encode all prompts and apply mask-based regional conditioning for Flux."""
 
@@ -294,9 +298,10 @@ Compatible: Flux, Chroma, SD3, SD3.5"""
         # Apply mask-based conditioning
         combined_conditioning = []
 
-        # Determine mask strength based on Flux optimization
-        # Flux research shows 180-220 (0.7-0.85 normalized) works better than full strength
-        mask_strength = 0.8 if flux_optimize else 1.0
+        # Determine mask strength based on soft mask setting
+        # Research shows 0.8 (softer masks) work better for Flux than full 1.0 strength
+        # May also benefit Chroma and SD3, but not confirmed
+        mask_strength = 0.8 if use_soft_masks else 1.0
 
         # Background (fullscreen - no mask)
         if encoded_conditionings[0]:
@@ -357,11 +362,11 @@ Compatible: Flux, Chroma, SD3, SD3.5"""
             x_end = min(x_latent + w_latent, latent_width)
             y_end = min(y_latent + h_latent, latent_height)
 
-            # Fill mask with optimized strength for Flux
+            # Fill mask with specified strength
             mask[0, y_latent:y_end, x_latent:x_end] = mask_strength
 
-            # Apply feathering if Flux optimize is enabled (softer edges)
-            if flux_optimize:
+            # Apply feathering if soft masks enabled (gentle edge blending)
+            if use_soft_masks:
                 # Apply gentle gaussian-like feather at edges (40-60px = 5-8 latent pixels)
                 feather_size = min(6, w_latent // 4, h_latent // 4)
                 if feather_size > 0:
