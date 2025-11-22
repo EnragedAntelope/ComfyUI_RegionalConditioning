@@ -38,6 +38,7 @@
 - **Format:** Must wrap in list: `[[cond, {"pooled_output": pooled}]]`
 - **Works:** Identical to external CLIPTextEncode nodes
 - **Benefit:** Massive UX improvement - no external nodes needed!
+- **Universal:** Same method works for ALL models (SD/SDXL/Flux/Chroma/SD3/etc.) - ComfyUI handles multi-encoder complexity internally
 
 #### Text Encoder Architectures by Model
 **CRITICAL:** Different models use different numbers and types of text encoders. ComfyUI's CLIP object handles the complexity internally, but understanding the architecture helps with debugging.
@@ -47,34 +48,42 @@
 | **SD 1.5** | 1 | CLIP-L | Standard `encode_from_tokens` |
 | **SD 2.x** | 1 | OpenCLIP-H | Standard `encode_from_tokens` |
 | **SDXL** | 2 | CLIP-L + OpenCLIP-G | Standard `encode_from_tokens` (handled internally) |
-| **Flux** ✅ | 2 | T5-XXL + CLIP-L | **`encode_from_tokens_scheduled`** with guidance |
+| **Flux** ✅ | 2 | T5-XXL + CLIP-L | Standard `encode_from_tokens` (handled internally) |
 | **Chroma** ✅ | 1 | T5-XXL only | Standard `encode_from_tokens` (Flux-based but single encoder!) |
 | **SD3** | 3 | CLIP-L + CLIP-G + T5-XXL | Standard `encode_from_tokens` (multi-encoder internal) |
 | **SD3.5** | 3 | CLIP-L + CLIP-G + T5-XXL | Standard `encode_from_tokens` (multi-encoder internal) |
-| **HiDream** | 4 | CLIP-L + CLIP-G + 2× T5 variants | ComfyUI uses 4 encoder files |
-| **WAN 2.1** | 1 | UMT5-XXL | Standard encoding (fp16/fp8/bf16 variants) |
-| **WAN 2.2** | 1 | UMT5-XXL + MoE | Standard encoding (nf4 4-bit quantization) |
-| **Qwen-Image** | 1 | Qwen 2.5 VL (qwen_2.5_vl_7b.safetensors) | Standard encoding (vision-language LLM encoder) |
+| **HiDream** | 4 | CLIP-L + CLIP-G + 2× T5 variants | Standard `encode_from_tokens` (multi-encoder internal) |
+| **WAN 2.1** | 1 | UMT5-XXL | Standard `encode_from_tokens` (fp16/fp8/bf16 variants) |
+| **WAN 2.2** | 1 | UMT5-XXL + MoE | Standard `encode_from_tokens` (nf4 4-bit quantization) |
+| **Qwen-Image** | 1 | Qwen 2.5 VL (qwen_2.5_vl_7b.safetensors) | Standard `encode_from_tokens` (vision-language LLM) |
 
-**Detection Strategy:**
+**Implementation (Simplified - November 2025):**
 ```python
-# Current implementation (correct for most models)
-is_flux = hasattr(clip, 'encode_from_tokens_scheduled')
-
-if is_flux:
-    # Flux-specific: dual encoder with guidance scheduling
-    cond = clip.encode_from_tokens_scheduled(tokens, add_dict={"guidance": guidance})
-else:
-    # Standard encoding: SD/SDXL/Chroma/SD3/SD3.5/HiDream/WAN/Qwen
-    # ComfyUI's CLIP object handles multi-encoder complexity internally
-    cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+# Universal encoding for ALL models (1, 2, 3, or 4 encoders)
+# ComfyUI's CLIP object handles multi-encoder complexity internally
+for prompt in prompts:
+    if prompt and prompt.strip():
+        tokens = clip.tokenize(prompt)
+        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+        encoded_conditionings.append([[cond, {"pooled_output": pooled}]])
 ```
+
+**Critical Discovery (November 2025):**
+- ❌ **WRONG:** Using `hasattr(clip, 'encode_from_tokens_scheduled')` to detect Flux
+  - This method exists in the **base CLIP class** that ALL models inherit from
+  - Returns `True` for SD1.5, SDXL, SD3, Flux, Chroma - everything!
+  - Completely useless for model detection
+- ✅ **CORRECT:** Use standard `encode_from_tokens(return_pooled=True)` for ALL models
+  - Works universally: SD (1 encoder), SDXL (2), Flux (2), SD3 (3), HiDream (4)
+  - ComfyUI's CLIP object abstracts encoder complexity
+  - No model-specific branching needed
+- 📝 **Note:** `encode_from_tokens_scheduled` is what CLIPTextEncode uses internally, but for regional prompting without temporal effects, `encode_from_tokens` works perfectly
 
 **Key Insights:**
 - ✅ **Chroma is Flux-based architecture but uses ONLY 1 encoder** (T5-XXL, not CLIP-L+T5-XXL)
-- ✅ **SD3/SD3.5 use 3 encoders** but ComfyUI's CLIP handles it transparently via standard method
+- ✅ **SD3/SD3.5 use 3 encoders** but ComfyUI's CLIP handles it transparently
 - ✅ **HiDream uses 4 encoders** in ComfyUI (CLIP-L, CLIP-G, T5 variants)
-- ✅ **Flux is the ONLY model** currently requiring `encode_from_tokens_scheduled` method
+- ✅ **ALL models** use the same encoding method - no special cases needed
 - ⚠️ **Don't assume encoder count from architecture** - Chroma proves Flux-based ≠ dual encoder!
 
 #### JavaScript UI

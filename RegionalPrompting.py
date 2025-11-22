@@ -207,13 +207,6 @@ class RegionalPrompterFlux:
                     "default": True,
                     "tooltip": "✅ RECOMMENDED: Softer masks (0.8 strength + gentle edge blend) work better than harsh full-strength (1.0) masks. Confirmed better for Flux, works well with other mask-based models. Disable if you prefer sharper region edges."
                 }),
-                "guidance": ("FLOAT", {
-                    "default": 3.5,
-                    "min": 0.0,
-                    "max": 100.0,
-                    "step": 0.1,
-                    "tooltip": "Guidance strength for Flux (default 3.5). Higher values = stronger prompt adherence. Try 5-7 for better regional control."
-                }),
             },
             "optional": {
                 "region2_prompt": ("STRING", {
@@ -267,15 +260,15 @@ How to use:
 • Works well with other mask-based models - try it first!
 
 Model-Specific Tips:
-• FLUX: Use 3-4 regions max (quality degrades with more), increase CFG to 5-7
+• FLUX: Use 3-4 regions max (quality degrades with more)
 • FLUX-BASED (Chroma, etc.): Likely 3-4 region limit too (untested), try and see!
-• SD3/SD3.5: No known region limit, standard CFG values
+• SD3/SD3.5: No known region limit
 • QWEN-IMAGE: Experimental - try mask-based conditioning and report results!
 
 Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models"""
 
     def encode_regions_flux(self, clip, width, height, background_prompt, region1_prompt,
-                           soften_masks, guidance, extra_pnginfo, unique_id,
+                           soften_masks, extra_pnginfo, unique_id,
                            region2_prompt="", region3_prompt="", region4_prompt=""):
         """Encode all prompts and apply mask-based regional conditioning for Flux/Chroma/SD3."""
 
@@ -314,43 +307,15 @@ Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models
             print(f"⚠️  Warning: {num_regions} regions detected. Flux works best with 3-4 regions maximum.")
 
         # Encode each prompt using CLIP
-        # Flux uses dual-encoder (CLIP-L + T5-XXL), Chroma/Qwen use single encoder
+        # ComfyUI's CLIP object handles multi-encoder complexity internally
+        # Works for all models: Flux (2 encoders), SD3 (3 encoders), Chroma/Qwen (1 encoder), etc.
         encoded_conditionings = []
-
-        # Detect if this is Flux by checking for encode_from_tokens_scheduled method
-        is_flux = hasattr(clip, 'encode_from_tokens_scheduled')
 
         for prompt in prompts:
             if prompt and prompt.strip():
                 tokens = clip.tokenize(prompt)
-
-                if is_flux:
-                    # Flux-specific: Dual encoder (CLIP-L + T5-XXL) with guidance
-                    # Check if t5xxl tokens are available
-                    if "t5xxl" in tokens:
-                        # Already has both encoders in single tokenize call
-                        pass
-                    else:
-                        # Need to merge t5xxl tokens manually
-                        try:
-                            t5_result = clip.tokenize(prompt)
-                            if "t5xxl" in t5_result:
-                                tokens["t5xxl"] = t5_result["t5xxl"]
-                        except:
-                            pass
-
-                    # Use Flux's scheduled encoding with guidance
-                    try:
-                        cond = clip.encode_from_tokens_scheduled(tokens, add_dict={"guidance": guidance})
-                        encoded_conditionings.append(cond)
-                    except Exception as e:
-                        print(f"⚠️  Flux encoding failed: {e}, using fallback")
-                        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-                        encoded_conditionings.append([[cond, {"pooled_output": pooled}]])
-                else:
-                    # Standard encoding for Chroma, Qwen, SD3, etc. (single encoder)
-                    cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-                    encoded_conditionings.append([[cond, {"pooled_output": pooled}]])
+                cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+                encoded_conditionings.append([[cond, {"pooled_output": pooled}]])
             else:
                 encoded_conditionings.append(None)
 
