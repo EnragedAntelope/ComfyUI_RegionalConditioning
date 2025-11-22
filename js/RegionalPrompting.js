@@ -209,7 +209,7 @@ function addRegionalPrompterCanvas(node, app) {
 		computeCanvasSize(node, node.size);
 	}, 100);
 
-	return { minWidth: 200, minHeight: 250, widget }  // Reduced to prevent overlap with box widgets
+	return { minWidth: 200, minHeight: 350, widget }  // Balanced size for canvas visibility
 }
 
 app.registerExtension({
@@ -224,10 +224,10 @@ app.registerExtension({
 				this.setProperty("height", 512)
 				// Default template: Two example boxes pre-drawn
 				// Region 1 (red sports car): left side, 200x250px starting at (50, 150)
-				// Region 2 (street vendor): right side, 180x250px starting at (280, 150)
+				// Region 2 (giraffe): right side, 180x300px starting at (280, 100) - taller for giraffe
 				this.setProperty("values", [
-					[50, 150, 200, 250, 2.0],   // Region 1 - increased strength
-					[280, 150, 180, 250, 2.0]    // Region 2 - increased strength
+					[50, 150, 200, 250, 2.0],   // Region 1 - red sports car
+					[280, 100, 180, 300, 2.0]    // Region 2 - giraffe (taller box)
 				])
 
 				this.selected = false
@@ -329,10 +329,10 @@ app.registerExtension({
 				this.setProperty("height", 1024)
 				// Default template: Two example boxes pre-drawn
 				// Region 1 (red sports car): left side, 400x500px starting at (100, 300)
-				// Region 2 (street vendor): right side, 350x500px starting at (560, 300)
+				// Region 2 (giraffe): right side, 350x600px starting at (560, 200) - taller for giraffe
 				this.setProperty("values", [
-					[100, 300, 400, 500, 2.0],   // Region 1 - increased strength for Flux
-					[560, 300, 350, 500, 2.0]    // Region 2 - increased strength for Flux
+					[100, 300, 400, 500, 2.0],   // Region 1 - red sports car
+					[560, 200, 350, 600, 2.0]    // Region 2 - giraffe (taller box)
 				])
 
 				this.selected = false

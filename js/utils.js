@@ -134,7 +134,7 @@ export function getDrawColor(percent, alpha) {
 export function computeCanvasSize(node, size) {
 	if (node.widgets[0].last_y == null) return;
 
-	const MIN_SIZE = 250;  // Reduced to prevent canvas overlap with widgets
+	const MIN_SIZE = 300;  // Balanced size for proper canvas visibility
 
 	let y = LiteGraph.NODE_WIDGET_HEIGHT * Math.max(node.inputs.length, node.outputs.length) + 5;
 	let freeSpace = size[1] - y;
@@ -162,8 +162,8 @@ export function computeCanvasSize(node, size) {
 		node.graph.setDirtyCanvas(true);
 	}
 
-	// Add bottom padding to prevent canvas from overlapping widgets/node border
-	const BOTTOM_PADDING = 20;
+	// Add small bottom padding to prevent canvas from overlapping widgets/node border
+	const BOTTOM_PADDING = 10;
 	const canvasHeight = Math.max(MIN_SIZE - BOTTOM_PADDING, freeSpace - BOTTOM_PADDING);
 
 	// Position each of the widgets

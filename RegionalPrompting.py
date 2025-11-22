@@ -34,7 +34,7 @@ class RegionalPrompterSimple:
             },
             "optional": {
                 "region2_prompt": ("STRING", {
-                    "default": "street vendor",
+                    "default": "giraffe wearing sunglasses",
                     "multiline": True,
                     "tooltip": "Region 2 - Second region/box (see canvas below)"
                 }),
@@ -224,7 +224,7 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 1 strength (5-8 for Flux, increase if region doesn't show)"
                 }),
                 "region2_prompt": ("STRING", {
-                    "default": "street vendor",
+                    "default": "giraffe wearing sunglasses",
                     "multiline": True,
                     "tooltip": "Region 2 - Second region/box (see canvas below)"
                 }),
@@ -439,10 +439,10 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
                             mask[0, y_end - 1 - edge_idx, x_latent:x_end] = fade
                         # Left edge
                         if x_latent + edge_idx < x_end:
-                            mask[0, y_latent:y_end, x_latent + edge_idx] = min(mask[0, y_latent:y_end, x_latent + edge_idx], fade)
+                            mask[0, y_latent:y_end, x_latent + edge_idx] = torch.minimum(mask[0, y_latent:y_end, x_latent + edge_idx], torch.tensor(fade))
                         # Right edge
                         if x_end - 1 - edge_idx >= x_latent:
-                            mask[0, y_latent:y_end, x_end - 1 - edge_idx] = min(mask[0, y_latent:y_end, x_end - 1 - edge_idx], fade)
+                            mask[0, y_latent:y_end, x_end - 1 - edge_idx] = torch.minimum(mask[0, y_latent:y_end, x_end - 1 - edge_idx], torch.tensor(fade))
 
             # Apply mask to conditioning
             for t in encoded_conditionings[i]:
