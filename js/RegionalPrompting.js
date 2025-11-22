@@ -222,12 +222,12 @@ app.registerExtension({
 
 				this.setProperty("width", 512)
 				this.setProperty("height", 512)
-				// Default template: Regions FAR APART (left & right thirds) for best results
-				// Region 1 (red sports car): left third, 150x300px starting at (30, 100)
-				// Region 2 (giraffe): right third, 150x350px starting at (332, 80)
+				// Default template: Regions in left & right thirds
+				// Region 1 (car): left third, 140x300px starting at (40, 100) - covers 8%-35% of width
+				// Region 2 (giraffe): right third, 140x350px starting at (360, 75) - covers 70%-98% of width
 				this.setProperty("values", [
-					[30, 100, 150, 300, 2.0],   // Region 1 - left third
-					[332, 80, 150, 350, 2.0]    // Region 2 - right third (taller for giraffe)
+					[40, 100, 140, 300, 2.0],   // Region 1 - left third
+					[360, 75, 140, 350, 2.0]    // Region 2 - right third
 				])
 
 				this.selected = false
@@ -327,12 +327,12 @@ app.registerExtension({
 
 				this.setProperty("width", 1024)
 				this.setProperty("height", 1024)
-				// Default template: Regions FAR APART (left & right thirds) for best results
-				// Region 1 (red sports car): left third, 300x600px starting at (50, 200)
-				// Region 2 (giraffe): right third, 300x700px starting at (674, 150)
+				// Default template: Regions in left & right thirds
+				// Region 1 (car): left third, 280x600px starting at (80, 200) - covers 8%-35% of width
+				// Region 2 (giraffe): right third, 280x700px starting at (720, 150) - covers 70%-98% of width
 				this.setProperty("values", [
-					[50, 200, 300, 600, 2.0],   // Region 1 - left third
-					[674, 150, 300, 700, 2.0]    // Region 2 - right third (taller for giraffe)
+					[80, 200, 280, 600, 2.0],   // Region 1 - left third
+					[720, 150, 280, 700, 2.0]   // Region 2 - right third
 				])
 
 				this.selected = false
@@ -419,8 +419,37 @@ app.registerExtension({
 					const originalWidthCallback = widthWidget.callback;
 					const node = this;  // Capture node reference for closure
 					widthWidget.callback = function(value) {
+						const oldWidth = node.properties["width"] || 1024;
+						const newWidth = value;
+						const scale = newWidth / oldWidth;
+
+						// Scale region X positions and widths proportionally
+						if (node.properties["values"] && scale !== 1) {
+							const scaledValues = node.properties["values"].map(region => {
+								const [x, y, w, h, strength] = region;
+								// Scale X position and width, keep Y and height unchanged
+								return [
+									Math.round(x * scale),
+									y,
+									Math.round(w * scale),
+									h,
+									strength
+								];
+							});
+							node.properties["values"] = scaledValues;
+
+							// Update the box widgets to show new values
+							const regionSelectorValue = node.widgets[node.index]?.value || 1;
+							const arrayIndex = regionSelectorValue - 1;
+							const offset = node.index + 1;
+							if (arrayIndex >= 0 && arrayIndex < scaledValues.length && node.widgets.length > offset + 3) {
+								node.widgets[offset].value = scaledValues[arrayIndex][0];      // box_x
+								node.widgets[offset + 2].value = scaledValues[arrayIndex][2];  // box_w
+							}
+						}
+
 						// Update canvas property to match
-						node.properties["width"] = value;
+						node.properties["width"] = newWidth;
 						// Force canvas redraw
 						if (app.graph) {
 							app.graph.setDirtyCanvas(true, true);
@@ -436,8 +465,37 @@ app.registerExtension({
 					const originalHeightCallback = heightWidget.callback;
 					const node = this;  // Capture node reference for closure
 					heightWidget.callback = function(value) {
+						const oldHeight = node.properties["height"] || 1024;
+						const newHeight = value;
+						const scale = newHeight / oldHeight;
+
+						// Scale region Y positions and heights proportionally
+						if (node.properties["values"] && scale !== 1) {
+							const scaledValues = node.properties["values"].map(region => {
+								const [x, y, w, h, strength] = region;
+								// Scale Y position and height, keep X and width unchanged
+								return [
+									x,
+									Math.round(y * scale),
+									w,
+									Math.round(h * scale),
+									strength
+								];
+							});
+							node.properties["values"] = scaledValues;
+
+							// Update the box widgets to show new values
+							const regionSelectorValue = node.widgets[node.index]?.value || 1;
+							const arrayIndex = regionSelectorValue - 1;
+							const offset = node.index + 1;
+							if (arrayIndex >= 0 && arrayIndex < scaledValues.length && node.widgets.length > offset + 3) {
+								node.widgets[offset + 1].value = scaledValues[arrayIndex][1];  // box_y
+								node.widgets[offset + 3].value = scaledValues[arrayIndex][3];  // box_h
+							}
+						}
+
 						// Update canvas property to match
-						node.properties["height"] = value;
+						node.properties["height"] = newHeight;
 						// Force canvas redraw
 						if (app.graph) {
 							app.graph.setDirtyCanvas(true, true);
