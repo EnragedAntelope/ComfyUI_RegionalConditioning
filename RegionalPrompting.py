@@ -52,10 +52,10 @@ class RegionalPrompterSimple:
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("CONDITIONING", "INT", "INT")
-    RETURN_NAMES = ("conditioning", "width", "height")
+    RETURN_TYPES = ("CONDITIONING",)
+    RETURN_NAMES = ("conditioning",)
     FUNCTION = "encode_regions"
-    CATEGORY = "Davemane42/Enhanced"
+    CATEGORY = "RegionalPrompter"
     DESCRIPTION = """🎨 ALL-IN-ONE Regional Prompting (EASY MODE!)
 
 Just type your prompts and draw boxes - that's it!
@@ -161,7 +161,7 @@ Compatible: SD1.5, SD2.x, SDXL"""
                 n[1]['max_sigma'] = 99.0
                 c.append(n)
 
-        return (c, int(resolutionX), int(resolutionY))
+        return (c,)
 
 
 class RegionalPrompterFlux:
@@ -231,18 +231,17 @@ class RegionalPrompterFlux:
     RETURN_TYPES = ("CONDITIONING",)
     RETURN_NAMES = ("conditioning",)
     FUNCTION = "encode_regions_flux"
-    CATEGORY = "Davemane42/Enhanced"
-    DESCRIPTION = """Mask-based regional prompting with inline text encoding.
+    CATEGORY = "RegionalPrompter"
+    DESCRIPTION = """Mask-based regional prompting for Flux, Chroma, SD3, SD3.5, Qwen-Image.
 
-Usage:
+Quick Start:
 1. Connect CLIP from checkpoint
-2. Set width/height to match your latent
-3. Type prompts for background and regions
-4. Draw boxes on canvas to position regions
-5. Connect conditioning to sampler
+2. Set width/height to match your latent exactly
+3. Type prompts (background + regions)
+4. Draw/adjust boxes on canvas
+5. Use CFG 1.0-1.5 for Flux
 
-Compatible: Flux, Chroma, SD3, SD3.5, Qwen-Image
-Recommended: CFG 1.0-3.5, soften_masks ON, 3-4 regions max for Flux"""
+Tips: Increase strength (1.5-3.0) if regions don't show. 3-4 regions max for Flux."""
 
     def encode_regions_flux(self, clip, width, height, soften_masks, background_prompt, region1_prompt,
                            extra_pnginfo, unique_id,
