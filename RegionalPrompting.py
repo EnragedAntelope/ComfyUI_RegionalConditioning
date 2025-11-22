@@ -29,24 +29,24 @@ class RegionalPrompterSimple:
                 "region1_prompt": ("STRING", {
                     "default": "red sports car",
                     "multiline": True,
-                    "tooltip": "Prompt for first region/box (clear this to disable)"
+                    "tooltip": "Region 1 - First region/box (see canvas below)"
                 }),
             },
             "optional": {
                 "region2_prompt": ("STRING", {
                     "default": "street vendor",
                     "multiline": True,
-                    "tooltip": "Prompt for second region (optional - clear this to disable)"
+                    "tooltip": "Region 2 - Second region/box (see canvas below)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for third region (optional - clear this to disable)"
+                    "tooltip": "Region 3 - Third region/box (see canvas below)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Prompt for fourth region (optional - clear this to disable)"
+                    "tooltip": "Region 4 - Fourth region/box (see canvas below)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
@@ -205,24 +205,24 @@ class RegionalPrompterFlux:
                 "region1_prompt": ("STRING", {
                     "default": "red sports car",
                     "multiline": True,
-                    "tooltip": "First region - draw box on canvas to position"
+                    "tooltip": "Region 1 - First region/box (see canvas below)"
                 }),
             },
             "optional": {
                 "region2_prompt": ("STRING", {
                     "default": "street vendor",
                     "multiline": True,
-                    "tooltip": "Second region (optional - clear to disable)"
+                    "tooltip": "Region 2 - Second region/box (see canvas below)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Third region (optional - Flux works best with 3-4 max)"
+                    "tooltip": "Region 3 - Third region/box (see canvas below)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Fourth region (optional - Flux works best with 3-4 max)"
+                    "tooltip": "Region 4 - Fourth region/box (see canvas below)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},

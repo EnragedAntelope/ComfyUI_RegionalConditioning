@@ -117,6 +117,12 @@ function addRegionalPrompterCanvas(node, app) {
 				ctx.fillStyle = getDrawColor(k/values.length, "80")
 				ctx.fillRect(widgetX+x, widgetY+y, w, h)
 
+				// Add region label
+				ctx.fillStyle = "#ffffff";
+				ctx.font = "bold 14px Arial";
+				ctx.textAlign = "left";
+				ctx.fillText(`Region ${k+1}`, widgetX+x+5, widgetY+y+18);
+
 			}
 
 			ctx.beginPath();
