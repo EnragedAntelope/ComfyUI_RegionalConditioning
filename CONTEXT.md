@@ -97,6 +97,12 @@ for prompt in prompts:
   - **Symptom:** Canvas widget completely invisible, no drawing interface shown
   - **Fix:** Added `WEB_DIRECTORY = os.path.join(os.path.dirname(__file__), "js")` export
   - **Impact:** JavaScript extensions weren't being loaded, canvas completely broken
+- 🐛 **Widget Callback Context Bug:** Fixed `TypeError: can't access property "step", this.options is undefined`
+  - **Cause:** Width/height widget callbacks used `.bind(this)` which bound to node, then called original callback with node as context
+  - **Symptom:** Loading workflows crashed with "can't access property step" error (original callback expected widget as `this`)
+  - **Fix:** Removed `.bind(this)`, captured node reference in closure, call original callback with widget context using `.call(this, value)`
+  - **Impact:** Workflows wouldn't load at all in web-based ComfyUI instances (MimicPC, browser-based)
+  - **Location:** RegionalPrompting.js:364-393
 - 🎨 **Node Naming:** Removed "EASY!" terminology and made names model-agnostic
   - **Before:** "Regional Prompter (Flux/Chroma - Easy!)" ← Model-specific and gimmicky
   - **After:** "Regional Prompter (Mask-Based)" ← Describes technique, not specific models

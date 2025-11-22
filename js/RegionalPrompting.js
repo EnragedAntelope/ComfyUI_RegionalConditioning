@@ -361,34 +361,36 @@ app.registerExtension({
 
 				if (widthWidget) {
 					const originalWidthCallback = widthWidget.callback;
+					const node = this;  // Capture node reference for closure
 					widthWidget.callback = function(value) {
 						// Update canvas property to match
-						this.properties["width"] = value;
+						node.properties["width"] = value;
 						// Force canvas redraw
 						if (app.graph) {
 							app.graph.setDirtyCanvas(true, true);
 						}
-						// Call original callback if it exists
+						// Call original callback if it exists (with widget as context)
 						if (originalWidthCallback) {
-							originalWidthCallback.apply(this, arguments);
+							originalWidthCallback.call(this, value);
 						}
-					}.bind(this);
+					};
 				}
 
 				if (heightWidget) {
 					const originalHeightCallback = heightWidget.callback;
+					const node = this;  // Capture node reference for closure
 					heightWidget.callback = function(value) {
 						// Update canvas property to match
-						this.properties["height"] = value;
+						node.properties["height"] = value;
 						// Force canvas redraw
 						if (app.graph) {
 							app.graph.setDirtyCanvas(true, true);
 						}
-						// Call original callback if it exists
+						// Call original callback if it exists (with widget as context)
 						if (originalHeightCallback) {
-							originalHeightCallback.apply(this, arguments);
+							originalHeightCallback.call(this, value);
 						}
-					}.bind(this);
+					};
 				}
 
 				return r;

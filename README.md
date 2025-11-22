@@ -450,7 +450,7 @@ TL;DR: Use it however you want, but don't blame us if it breaks! 😄
 **Current Maintainer:** EnragedAntelope
 **Repository:** [github.com/EnragedAntelope/ComfyUI_RegionalConditioning](https://github.com/EnragedAntelope/ComfyUI_RegionalConditioning)
 
-**Original Author:** Davemane42#0042
+**Original Author:** [Davemane42](https://github.com/Davemane42)
 **Original Concept:** Visual regional conditioning interface for ComfyUI
 
 **Modernization & Enhancement (2025):**
