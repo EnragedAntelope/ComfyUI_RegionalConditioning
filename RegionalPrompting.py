@@ -194,11 +194,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Output height - must match your latent/sampler"
                 }),
                 "background_strength": ("FLOAT", {
-                    "default": 1.0,
+                    "default": 0.5,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Background conditioning strength (lower = regions show more easily)"
+                    "tooltip": "Background conditioning strength (0.3-0.7 for Flux, lower = regions show more)"
                 }),
                 "soften_masks": ("BOOLEAN", {
                     "default": True,
@@ -217,11 +217,11 @@ class RegionalPrompterFlux:
             },
             "optional": {
                 "region1_strength": ("FLOAT", {
-                    "default": 2.5,
+                    "default": 5.0,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.1,
-                    "tooltip": "Region 1 conditioning strength (2.5-4.0 recommended for Flux)"
+                    "step": 0.5,
+                    "tooltip": "Region 1 strength (5-8 for Flux, increase if region doesn't show)"
                 }),
                 "region2_prompt": ("STRING", {
                     "default": "street vendor",
@@ -229,11 +229,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 2 - Second region/box (see canvas below)"
                 }),
                 "region2_strength": ("FLOAT", {
-                    "default": 3.5,
+                    "default": 6.0,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.1,
-                    "tooltip": "Region 2 conditioning strength (increase if region doesn't show)"
+                    "step": 0.5,
+                    "tooltip": "Region 2 strength (6-9 for Flux, increase if region doesn't show)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "",
@@ -241,11 +241,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 3 - Third region/box (see canvas below)"
                 }),
                 "region3_strength": ("FLOAT", {
-                    "default": 4.0,
+                    "default": 7.0,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.1,
-                    "tooltip": "Region 3 conditioning strength (increase if region doesn't show)"
+                    "step": 0.5,
+                    "tooltip": "Region 3 strength (7-10 for Flux, increase if region doesn't show)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
@@ -253,11 +253,11 @@ class RegionalPrompterFlux:
                     "tooltip": "Region 4 - Fourth region/box (see canvas below)"
                 }),
                 "region4_strength": ("FLOAT", {
-                    "default": 4.0,
+                    "default": 8.0,
                     "min": 0.0,
                     "max": 10.0,
-                    "step": 0.1,
-                    "tooltip": "Region 4 conditioning strength (increase if region doesn't show)"
+                    "step": 0.5,
+                    "tooltip": "Region 4 strength (8-10 for Flux, increase if region doesn't show)"
                 }),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
@@ -281,8 +281,8 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
 
     def encode_regions_flux(self, clip, width, height, background_strength, soften_masks, background_prompt, region1_prompt,
                            extra_pnginfo, unique_id,
-                           region1_strength=2.5, region2_prompt="", region2_strength=3.5,
-                           region3_prompt="", region3_strength=4.0, region4_prompt="", region4_strength=4.0):
+                           region1_strength=5.0, region2_prompt="", region2_strength=6.0,
+                           region3_prompt="", region3_strength=7.0, region4_prompt="", region4_strength=8.0):
         """Encode all prompts and apply mask-based regional conditioning for Flux/Chroma/SD3."""
 
         # Default template boxes (if workflow not saved yet)
@@ -344,10 +344,9 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
         # Apply mask-based conditioning
         combined_conditioning = []
 
-        # Determine mask strength based on soften setting
-        # Research shows 0.8 (softer masks) work better than full 1.0 strength for Flux
-        # Users can try it for Chroma/SD3 (default ON), disable if they prefer sharper edges
-        mask_strength = 0.8 if soften_masks else 1.0
+        # Mask tensor values: use 1.0 (full binary mask), let mask_strength param control intensity
+        # The per-region strength parameter in conditioning dict controls actual strength
+        mask_tensor_value = 1.0  # Always use binary mask (0.0 or 1.0)
 
         # Background (fullscreen - no mask)
         # Apply background_strength to allow users to reduce background influence
@@ -377,7 +376,7 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
                 x, y = int(values[i-1][0]), int(values[i-1][1])
                 w, h = int(values[i-1][2]), int(values[i-1][3])
                 # Use per-region strength from inputs instead of canvas values
-                strength = region_strengths[i-1] if i-1 < len(region_strengths) else 2.5
+                strength = region_strengths[i-1] if i-1 < len(region_strengths) else 5.0
             except (IndexError, ValueError, TypeError):
                 continue
 
@@ -417,33 +416,33 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
             x_end = min(x_latent + w_latent, latent_width)
             y_end = min(y_latent + h_latent, latent_height)
 
-            # Fill mask with specified strength
-            mask[0, y_latent:y_end, x_latent:x_end] = mask_strength
+            # Fill mask region with 1.0 (binary mask)
+            mask[0, y_latent:y_end, x_latent:x_end] = mask_tensor_value
 
             print(f"   Region {i}: '{prompts[i][:40]}...'")
             print(f"      Box: x={x}, y={y}, w={w}, h={h}")
             print(f"      Latent: x={x_latent}, y={y_latent}, w={w_latent}, h={h_latent}")
-            print(f"      Mask strength: {mask_strength}, Region strength: {strength}")
+            print(f"      Mask: binary 1.0, Conditioning strength: {strength}")
 
-            # Apply feathering if softening enabled (gentle edge blending to avoid harsh boundaries)
+            # Apply feathering if enabled (gentle edge blending)
             if soften_masks:
-                # Apply gentle gaussian-like feather at edges (40-60px = 5-8 latent pixels)
+                # Apply gaussian-like feather at edges (40-60px = 5-8 latent pixels)
                 feather_size = min(6, w_latent // 4, h_latent // 4)
                 if feather_size > 0:
                     for edge_idx in range(feather_size):
-                        fade = (edge_idx + 1) / feather_size * mask_strength
+                        fade = (edge_idx + 1) / feather_size  # 0.0 to 1.0 gradient
                         # Top edge
                         if y_latent + edge_idx < y_end:
-                            mask[0, y_latent + edge_idx, x_latent:x_end] *= (fade / mask_strength)
+                            mask[0, y_latent + edge_idx, x_latent:x_end] = fade
                         # Bottom edge
                         if y_end - 1 - edge_idx >= y_latent:
-                            mask[0, y_end - 1 - edge_idx, x_latent:x_end] *= (fade / mask_strength)
+                            mask[0, y_end - 1 - edge_idx, x_latent:x_end] = fade
                         # Left edge
                         if x_latent + edge_idx < x_end:
-                            mask[0, y_latent:y_end, x_latent + edge_idx] *= (fade / mask_strength)
+                            mask[0, y_latent:y_end, x_latent + edge_idx] = min(mask[0, y_latent:y_end, x_latent + edge_idx], fade)
                         # Right edge
                         if x_end - 1 - edge_idx >= x_latent:
-                            mask[0, y_latent:y_end, x_end - 1 - edge_idx] *= (fade / mask_strength)
+                            mask[0, y_latent:y_end, x_end - 1 - edge_idx] = min(mask[0, y_latent:y_end, x_end - 1 - edge_idx], fade)
 
             # Apply mask to conditioning
             for t in encoded_conditionings[i]:

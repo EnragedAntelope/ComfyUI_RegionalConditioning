@@ -19,14 +19,16 @@
 
 #### Mask-Based Conditioning (Flux, Chroma, SD3, etc.)
 - **Models:** Flux (all variants), Chroma (Chroma1-Radiance, etc.), SD3/SD3.5, and other mask-based models
-- **Technology:** Binary masks created from drawn boxes
-- **Critical Discovery:** Flux requires **0.7-0.85 mask strength** (NOT 1.0!)
-  - Full strength (1.0) creates harsh, over-defined regions
-  - Research shows 180-220 out of 255 (0.7-0.85 normalized) optimal
-  - Implementation uses 0.8 as sweet spot
-  - **Other Models:** Works well with mask-based models in general, user testing needed
+- **Technology:** Binary masks (1.0 values) with `mask_strength` parameter controlling intensity
+- **Critical Discovery:** Flux requires **VERY HIGH mask_strength values** (5.0-8.0+ range!)
+  - **UPDATED November 2025:** User testing proved strength 4.0 = doesn't show, strength 6.0 = works
+  - Binary mask tensor should use 1.0 values (not 0.8)
+  - Strength is controlled entirely by the `mask_strength` conditioning parameter
+  - Background strength should be LOW (0.3-0.7) to allow regions to show
+  - **Other Models:** Different models may require different strength ranges - user testing needed
 - **Feathering:** 40-60px (5-8 latent pixels) gentle feathering improves blending
   - Tied to `soften_masks` toggle - user can disable for sharp edges
+  - Feathering gradient: 0.0 to 1.0 (not scaled by mask strength)
 - **Region Limit (Flux):** Flux works best with 3-4 regions maximum (confirmed)
 - **Region Limit (Chroma):** Likely 3-4 regions too since Chroma is Flux-based (UNTESTED - needs user confirmation)
 - **Region Limit (SD3/SD3.5):** No known limit
@@ -37,11 +39,13 @@
   - Dev variants may support higher CFG, but start with 1.0
 - **Per-Region Strength (CRITICAL DISCOVERY - November 2025):**
   - **Each region needs its own strength control** - global strength doesn't work!
-  - User testing showed: Both regions at 2.0 = car yes, giraffe no
-  - Car at 2.0, giraffe at 4.0 = BOTH appear (red vehicle + giraffe)
+  - User testing showed: strength 4.0 for car = didn't appear, strength 6.0 for giraffe = worked
   - **Implementation:** Added region1_strength, region2_strength, region3_strength, region4_strength inputs
-  - **Recommended defaults:** 2.5, 3.5, 4.0, 4.0 (increasing strength for later regions)
-  - **Why:** Background conditioning competes with regions - later regions need higher strength
+  - **Recommended defaults for Flux:** 5.0, 6.0, 7.0, 8.0 (increasing strength for later regions)
+  - **Background strength:** 0.5 default (range 0.3-0.7 recommended for Flux)
+  - **Why:** Background and regions compete; low background + high region strengths = regions show
+  - **Conditioning key:** Use `mask_strength` (not `strength`) for mask-based conditioning
+  - **set_area_to_bounds:** Should be False for mask-based conditioning
 
 #### CLIP Encoding (Inline Prompts)
 - **Method:** `clip.tokenize(prompt)` → `clip.encode_from_tokens(tokens, return_pooled=True)`
@@ -462,3 +466,84 @@ except Exception as e:
 - Document all breaking changes in README changelog
 - Keep CONTEXT.md updated with new learnings
 - Credit original author (Davemane42) in README and LICENSE
+
+---
+
+## Helpful Resources & Reference Implementations
+
+### Working Regional Conditioning Implementations (2025)
+
+#### RES4LYF - Advanced Flux Regional Conditioning
+- **Repository:** https://github.com/city96/RES4LYF
+- **Approach:** Model patching with attention mask injection
+- **Key Techniques:**
+  - Patches Flux transformer blocks directly (not just conditioning)
+  - Creates cross-attention masks (text-to-image) and self-attention masks (image-to-image)
+  - Uses `regional_generate_conditionings_and_masks_fn` injected into conditioning dict
+  - Timestep-based control with `start_percent` and `end_percent`
+  - `mask_weight` parameter (default 1.0, range -10000 to 10000)
+  - `region_bleed` parameter for controlling region boundary blending
+- **Conditioning Format:**
+  - `conditioning_regional` list with `{'mask': tensor, 'cond': tensor}` dicts
+  - Masks interpolated to latent resolution (h//2, w//2 for 16x16 positional encoding)
+  - Regional conditioning combined with main conditioning via attention masking
+- **Differences from Our Implementation:**
+  - Much more complex - patches model internals, not just conditioning metadata
+  - Requires model patching (ReFluxPatcher)
+  - Our simpler approach uses standard ComfyUI `mask_strength` conditioning key
+  - RES4LYF has more precise control but higher complexity
+
+#### Curved Weight Schedule - Multi-Layer Mask Editor
+- **Repository:** https://github.com/diffussy69/comfyui-curved_weight_schedule
+- **Key Feature:** Interactive canvas-based mask painting with brush tools
+- **Canvas Implementation:**
+  - Mouse events: mousedown, mousemove, mouseup for brush painting
+  - Pan/zoom: CSS transforms with `translate()` and `scale()`
+  - Coordinate conversion: `screenToCanvas()` and `canvasToScreen()` helpers
+  - Brush interpolation: `drawLine()` samples intermediate points for smooth strokes
+  - Multi-layer support: Up to 10 independent mask layers with visibility toggling
+  - Serialization: Base64-encoded alpha channels uploaded to backend as JSON
+- **Regional Conditioning:**
+  - Uses standard `mask_strength` key (same as our implementation)
+  - Default strength 1.0 (much lower than our Flux values of 5.0-8.0)
+  - `set_area_to_bounds: False` (same as ours)
+  - No Flux-specific handling (architecture-agnostic)
+- **Potential Integration:**
+  - Could adopt their mouse-based mask painting for future enhancement
+  - Their canvas interaction code is well-structured and modular
+  - Would replace our current box-based drawing with freeform brush painting
+
+### ComfyUI Official Documentation
+- **Conditioning Format:** https://docs.comfy.org/essentials/conditioning
+- **Custom Nodes Guide:** https://docs.comfy.org/developers/custom-nodes
+- **Mask-Based Conditioning:** Standard practice is binary masks (0.0/1.0) with `mask_strength` parameter
+- **Area-Based Conditioning:** Uses `ConditioningSetArea` with `strength` parameter (different from `mask_strength`)
+
+### Key Differences: Our Implementation vs Others
+
+**Our Implementation (ComfyUI_RegionalConditioning):**
+- Simplest approach: Standard ComfyUI conditioning with `mask_strength` metadata
+- Pre-drawn boxes with manual coordinate adjustment (no mouse painting yet)
+- Per-region strength controls (4 regions max)
+- Binary masks with feathering option
+- High strength values for Flux (5.0-8.0+)
+- No model patching required
+
+**RES4LYF:**
+- Most complex: Patches Flux model internals with custom attention masks
+- Requires ReFluxPatcher to modify model behavior
+- More precise regional control via attention masking
+- Lower strength values (default 1.0)
+- Advanced features: timestep control, region bleed
+
+**Curved Weight Schedule:**
+- Middle complexity: Standard conditioning with advanced UI
+- Interactive canvas with brush painting and pan/zoom
+- Multi-layer mask support (10 layers)
+- Lower strength values (default 1.0)
+- No Flux-specific handling
+
+**Recommendation:**
+- For basic regional prompting: Our implementation works and is simple
+- For advanced control: RES4LYF provides more precision at cost of complexity
+- For UI/UX: Curved Weight Schedule has best canvas interaction (could be adopted)

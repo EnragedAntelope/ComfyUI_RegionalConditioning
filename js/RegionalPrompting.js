@@ -209,7 +209,7 @@ function addRegionalPrompterCanvas(node, app) {
 		computeCanvasSize(node, node.size);
 	}, 100);
 
-	return { minWidth: 200, minHeight: 600, widget }  // Increased to accommodate canvas + widgets
+	return { minWidth: 200, minHeight: 250, widget }  // Reduced to prevent overlap with box widgets
 }
 
 app.registerExtension({
@@ -238,13 +238,24 @@ app.registerExtension({
 				addRegionalPrompterCanvas(this, app)
 
 				// Limit height of multiline prompt widgets to make node more compact
-				const promptNames = ["background_prompt", "region1_prompt", "region2_prompt", "region3_prompt", "region4_prompt"];
-				for (const w of this.widgets) {
-					if (promptNames.includes(w.name) && w.inputEl) {
+				const promptLabels = {
+				"background_prompt": "🌍 Background Prompt:",
+				"region1_prompt": "📍 Region 1:",
+				"region2_prompt": "📍 Region 2:",
+				"region3_prompt": "📍 Region 3:",
+				"region4_prompt": "📍 Region 4:"
+			};
+			for (const w of this.widgets) {
+				if (w.name in promptLabels) {
+					// Set visible label header
+					w.label = promptLabels[w.name];
+					// Limit input height
+					if (w.inputEl) {
 						w.inputEl.style.maxHeight = "60px";  // ~3 lines of text
 						w.inputEl.style.overflowY = "auto";
 					}
 				}
+			}
 
 				// Find where index widget should be inserted (after canvas)
 				const indexWidgetStartPos = this.widgets.length;
@@ -253,21 +264,24 @@ app.registerExtension({
 				CUSTOM_INT(
 					this,
 					"region",
-					0,
+					1,  // Start at 1 (Region 1) not 0
 					function (v, _, node) {
 						let values = node.properties["values"]
+						// v is now 1-based (1=Region 1, 2=Region 2, etc.)
+						// Convert to 0-based array index
+						const arrayIndex = v - 1;
 
 						// Widget indices are after canvas and region selector
 						const offset = indexWidgetStartPos + 1;
-						if (node.widgets.length > offset + 3) {
+						if (arrayIndex >= 0 && arrayIndex < values.length && node.widgets.length > offset + 3) {
 							// Update box dimension widgets (strength removed - now per-region inputs in Python)
-							node.widgets[offset].value = values[v][0]      // box_x
-							node.widgets[offset + 1].value = values[v][1]  // box_y
-							node.widgets[offset + 2].value = values[v][2]  // box_w
-							node.widgets[offset + 3].value = values[v][3]  // box_h
+							node.widgets[offset].value = values[arrayIndex][0]      // box_x
+							node.widgets[offset + 1].value = values[arrayIndex][1]  // box_y
+							node.widgets[offset + 2].value = values[arrayIndex][2]  // box_w
+							node.widgets[offset + 3].value = values[arrayIndex][3]  // box_h
 						}
 					},
-					{ step: 10, max: 1 }
+					{ step: 10, min: 1, max: 2 }  // Start at 1, default max 2 regions
 				)
 
 				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
@@ -329,13 +343,24 @@ app.registerExtension({
 				addRegionalPrompterCanvas(this, app)
 
 				// Limit height of multiline prompt widgets to make node more compact
-				const promptNames = ["background_prompt", "region1_prompt", "region2_prompt", "region3_prompt", "region4_prompt"];
-				for (const w of this.widgets) {
-					if (promptNames.includes(w.name) && w.inputEl) {
+				const promptLabels = {
+				"background_prompt": "🌍 Background Prompt:",
+				"region1_prompt": "📍 Region 1:",
+				"region2_prompt": "📍 Region 2:",
+				"region3_prompt": "📍 Region 3:",
+				"region4_prompt": "📍 Region 4:"
+			};
+			for (const w of this.widgets) {
+				if (w.name in promptLabels) {
+					// Set visible label header
+					w.label = promptLabels[w.name];
+					// Limit input height
+					if (w.inputEl) {
 						w.inputEl.style.maxHeight = "60px";  // ~3 lines of text
 						w.inputEl.style.overflowY = "auto";
 					}
 				}
+			}
 
 				// Find where index widget should be inserted (after canvas)
 				const indexWidgetStartPos = this.widgets.length;
@@ -344,21 +369,24 @@ app.registerExtension({
 				CUSTOM_INT(
 					this,
 					"region",
-					0,
+					1,  // Start at 1 (Region 1) not 0
 					function (v, _, node) {
 						let values = node.properties["values"]
+						// v is now 1-based (1=Region 1, 2=Region 2, etc.)
+						// Convert to 0-based array index
+						const arrayIndex = v - 1;
 
 						// Widget indices are after canvas and region selector
 						const offset = indexWidgetStartPos + 1;
-						if (node.widgets.length > offset + 3) {
+						if (arrayIndex >= 0 && arrayIndex < values.length && node.widgets.length > offset + 3) {
 							// Update box dimension widgets (strength removed - now per-region inputs in Python)
-							node.widgets[offset].value = values[v][0]      // box_x
-							node.widgets[offset + 1].value = values[v][1]  // box_y
-							node.widgets[offset + 2].value = values[v][2]  // box_w
-							node.widgets[offset + 3].value = values[v][3]  // box_h
+							node.widgets[offset].value = values[arrayIndex][0]      // box_x
+							node.widgets[offset + 1].value = values[arrayIndex][1]  // box_y
+							node.widgets[offset + 2].value = values[arrayIndex][2]  // box_w
+							node.widgets[offset + 3].value = values[arrayIndex][3]  // box_h
 						}
 					},
-					{ step: 10, max: 1 }
+					{ step: 10, min: 1, max: 2 }  // Start at 1, default max 2 regions
 				)
 
 				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)})
