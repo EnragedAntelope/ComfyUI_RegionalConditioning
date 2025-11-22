@@ -337,6 +337,11 @@ except Exception as e:
 - [ ] **Copy/Paste Regions:** Right-click menu to duplicate region boxes
 
 ### Low Priority / Future Research
+- [ ] **Mouse-Based Box Manipulation:** Allow users to draw and move region boxes with mouse
+  - Currently users adjust x/y/width/height with numeric inputs
+  - Future improvement: Click and drag to create boxes, drag corners to resize
+  - Would require significant JavaScript canvas interaction code
+  - Reference: Many image editing tools use similar drag-to-draw interfaces
 - [ ] **WAN 2.2 Support:** Research single-frame generation conditioning
 - [ ] **V3 Schema Migration:** When ComfyUI V3 becomes stable/mandatory
 - [ ] **Complex Shapes:** Support for circular/polygonal regions (would require mask drawing UI)

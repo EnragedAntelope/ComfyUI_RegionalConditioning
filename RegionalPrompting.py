@@ -193,6 +193,13 @@ class RegionalPrompterFlux:
                     "step": 64,
                     "tooltip": "Output height - must match your latent/sampler"
                 }),
+                "background_strength": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0.0,
+                    "max": 10.0,
+                    "step": 0.1,
+                    "tooltip": "Background conditioning strength (lower = regions show more easily)"
+                }),
                 "soften_masks": ("BOOLEAN", {
                     "default": True,
                     "tooltip": "Enable feathering at region edges - recommended ON"
@@ -272,7 +279,7 @@ Quick Start:
 
 Tips: Increase per-region strength if regions don't show. 3-4 regions max for Flux."""
 
-    def encode_regions_flux(self, clip, width, height, soften_masks, background_prompt, region1_prompt,
+    def encode_regions_flux(self, clip, width, height, background_strength, soften_masks, background_prompt, region1_prompt,
                            extra_pnginfo, unique_id,
                            region1_strength=2.5, region2_prompt="", region2_strength=3.5,
                            region3_prompt="", region3_strength=4.0, region4_prompt="", region4_strength=4.0):
@@ -312,6 +319,8 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
 
         print(f"\n🎨 Regional Prompter - Processing:")
         print(f"   Dimensions: {width}x{height} (latent: {width//8}x{height//8})")
+        print(f"   Background strength: {background_strength}")
+        print(f"   Region strengths: [{region1_strength}, {region2_strength}, {region3_strength}, {region4_strength}]")
         print(f"   Regions: {num_regions} active (background + {num_regions} regions)")
         print(f"   Soften masks: {soften_masks}")
         print(f"   Default boxes: {values}")
@@ -341,9 +350,14 @@ Tips: Increase per-region strength if regions don't show. 3-4 regions max for Fl
         mask_strength = 0.8 if soften_masks else 1.0
 
         # Background (fullscreen - no mask)
+        # Apply background_strength to allow users to reduce background influence
         if encoded_conditionings[0]:
             for t in encoded_conditionings[0]:
-                combined_conditioning.append(t)
+                n = [t[0], t[1].copy()]
+                if background_strength != 1.0:
+                    # Scale the conditioning tensor by background_strength
+                    n[0] = t[0] * background_strength
+                combined_conditioning.append(n)
 
         # Per-region strength values from inputs (not canvas)
         region_strengths = [region1_strength, region2_strength, region3_strength, region4_strength]
