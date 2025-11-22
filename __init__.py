@@ -32,24 +32,20 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     # Original nodes
     "MultiLatentComposite": "Multi Latent Composite (Visual)",
-    "MultiAreaConditioning": "Multi Area Conditioning (SD/SDXL - Advanced)",
-    "MultiAreaConditioningMask": "Multi Area Conditioning (Flux/Chroma - Advanced)",
+    "MultiAreaConditioning": "Multi Area Conditioning (SD1.5/SDXL)",
+    "MultiAreaConditioningMask": "Multi Area Conditioning (Mask-Based)",
     "ConditioningUpscale": "Conditioning Upscale",
     "ConditioningStretch": "Conditioning Stretch",
 
-    # Enhanced nodes
-    "RegionalPrompterSimple": "🎨 Regional Prompter (SD/SDXL - Easy!)",
-    "RegionalPrompterFlux": "🎨 Regional Prompter (Flux/Chroma - Easy!)",
+    # Enhanced nodes with inline prompts
+    "RegionalPrompterSimple": "Regional Prompter (Area-Based)",
+    "RegionalPrompterFlux": "Regional Prompter (Mask-Based)",
 }
 
-__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+# Export web directory for JavaScript files
+import os
+WEB_DIRECTORY = os.path.join(os.path.dirname(__file__), "js")
 
-print('\033[34mDavemane42 Custom Nodes (Modernized): \033[92mLoaded\033[0m')
-print('\033[90m  📦 Original Nodes (Advanced):\033[0m')
-print('\033[90m    - Multi Area Conditioning: SD1.5, SD2.x, SDXL\033[0m')
-print('\033[90m    - Multi Area Conditioning Mask: Flux, Chroma, SD3+\033[0m')
-print('\033[90m    - Multi Latent Composite with feathering\033[0m')
-print('\033[90m    - Conditioning utilities (Upscale, Stretch)\033[0m')
-print('\033[92m  ✨ RECOMMENDED - Enhanced Easy Nodes:\033[0m')
-print('\033[92m    - Regional Prompter (SD/SDXL) - Type prompts directly!\033[0m')
-print('\033[92m    - Regional Prompter (Flux/Chroma) - Optimized for modern models!\033[0m')
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
+
+print('\033[34mComfyUI_RegionalConditioning: \033[92mLoaded successfully\033[0m')

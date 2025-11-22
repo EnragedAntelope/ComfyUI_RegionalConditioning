@@ -394,20 +394,20 @@ Compatible: Flux (all variants), Chroma, SD3, SD3.5, and other mask-based models
                 # Apply gentle gaussian-like feather at edges (40-60px = 5-8 latent pixels)
                 feather_size = min(6, w_latent // 4, h_latent // 4)
                 if feather_size > 0:
-                    for i in range(feather_size):
-                        fade = (i + 1) / feather_size * mask_strength
+                    for edge_idx in range(feather_size):
+                        fade = (edge_idx + 1) / feather_size * mask_strength
                         # Top edge
-                        if y_latent + i < y_end:
-                            mask[0, y_latent + i, x_latent:x_end] *= (fade / mask_strength)
+                        if y_latent + edge_idx < y_end:
+                            mask[0, y_latent + edge_idx, x_latent:x_end] *= (fade / mask_strength)
                         # Bottom edge
-                        if y_end - 1 - i >= y_latent:
-                            mask[0, y_end - 1 - i, x_latent:x_end] *= (fade / mask_strength)
+                        if y_end - 1 - edge_idx >= y_latent:
+                            mask[0, y_end - 1 - edge_idx, x_latent:x_end] *= (fade / mask_strength)
                         # Left edge
-                        if x_latent + i < x_end:
-                            mask[0, y_latent:y_end, x_latent + i] *= (fade / mask_strength)
+                        if x_latent + edge_idx < x_end:
+                            mask[0, y_latent:y_end, x_latent + edge_idx] *= (fade / mask_strength)
                         # Right edge
-                        if x_end - 1 - i >= x_latent:
-                            mask[0, y_latent:y_end, x_end - 1 - i] *= (fade / mask_strength)
+                        if x_end - 1 - edge_idx >= x_latent:
+                            mask[0, y_latent:y_end, x_end - 1 - edge_idx] *= (fade / mask_strength)
 
             # Apply mask to conditioning
             for t in encoded_conditionings[i]:
