@@ -12,6 +12,10 @@ function addEasyRegionCanvas(node, app) {
 		type: "customCanvas",
 		name: "EasyRegion-Canvas",
 		value: {},
+		computeSize: function(width) {
+			// Tell LiteGraph this widget needs 280px of height
+			return [width, 280];
+		},
 		draw: function (ctx, node, widgetWidth, widgetY) {
 
 			if (!node.canvasHeight) {
@@ -21,7 +25,7 @@ function addEasyRegionCanvas(node, app) {
 			const margin = 10
 			const border = 2
 
-			const widgetHeight = node.canvasHeight || 200
+			const widgetHeight = node.canvasHeight || 280
 			const values = node.properties["values"] || []
 			const width = Math.round(node.properties["width"] || 512)
 			const height = Math.round(node.properties["height"] || 512)
