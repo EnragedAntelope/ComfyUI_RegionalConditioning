@@ -473,7 +473,7 @@ See README for model-specific tips and recommended settings."""
                         if x_end - 1 - edge_idx >= x_latent:
                             feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx] = torch.minimum(feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx], torch.tensor(fade))
 
-            # Apply mask-based conditioning with attention masking
+            # Apply mask-based conditioning with optimized attention masking
             for t in encoded_conditionings[i]:
                 n = [t[0], t[1].copy()]
                 n[1]['mask'] = feathered_mask  # Feathered for smooth visual blending
@@ -481,38 +481,37 @@ See README for model-specific tips and recommended settings."""
                 n[1]['set_area_to_bounds'] = False
 
                 # Create attention mask for precise regional control (Flux/DiT models)
-                # Format: [batch, (txt_tokens + h*w), (txt_tokens + h*w)]
-                # This masks cross-attention between text and image tokens
+                # KEY INSIGHT: Only mask text-to-image cross-contamination
+                # Allow image-to-image attention for proper blending
                 cond_tensor = t[0]  # [batch, seq_len, hidden_dim]
                 txt_tokens = cond_tensor.shape[1]  # Number of text tokens from encoding
                 img_tokens = latent_height * latent_width  # Flattened image tokens
                 total_tokens = txt_tokens + img_tokens
 
-                # Initialize with -inf (block all attention) then selectively enable
-                # Using -10000 as practical -inf value that doesn't cause numerical issues
-                attention_mask = torch.full((1, total_tokens, total_tokens), -10000.0, dtype=torch.float32)
+                # Initialize with 0.0 (allow all attention by default)
+                attention_mask = torch.zeros((1, total_tokens, total_tokens), dtype=torch.float32)
 
-                # Enable text-to-text attention (always allow)
-                attention_mask[0, :txt_tokens, :txt_tokens] = 0.0
+                # Block text-to-image attention for image tokens OUTSIDE this region
+                # This prevents "bird" prompt from affecting car region, etc.
+                # Use vectorized operations for speed
 
-                # Enable text-to-image attention ONLY for tokens in this region
+                # Create boolean mask for this region's image tokens
+                region_mask = torch.zeros(img_tokens, dtype=torch.bool)
                 for y in range(y_latent, y_end):
-                    for x in range(x_latent, x_end):
-                        img_token_idx = txt_tokens + (y * latent_width + x)
-                        # Text can attend to this region's image tokens
-                        attention_mask[0, :txt_tokens, img_token_idx] = 0.0
-                        # This region's image tokens can attend to text
-                        attention_mask[0, img_token_idx, :txt_tokens] = 0.0
+                    start_idx = y * latent_width + x_latent
+                    end_idx = y * latent_width + x_end
+                    region_mask[start_idx:end_idx] = True
 
-                # Enable image-to-image attention within this region
-                for y1 in range(y_latent, y_end):
-                    for x1 in range(x_latent, x_end):
-                        img_token_idx1 = txt_tokens + (y1 * latent_width + x1)
-                        for y2 in range(y_latent, y_end):
-                            for x2 in range(x_latent, x_end):
-                                img_token_idx2 = txt_tokens + (y2 * latent_width + x2)
-                                # Tokens within region can attend to each other
-                                attention_mask[0, img_token_idx1, img_token_idx2] = 0.0
+                # Block text attending to image tokens OUTSIDE this region
+                # Text tokens (rows 0:txt_tokens) to image tokens (cols txt_tokens:total_tokens)
+                for img_idx in range(img_tokens):
+                    if not region_mask[img_idx]:
+                        # This image token is outside the region - block text from attending to it
+                        attention_mask[0, :txt_tokens, txt_tokens + img_idx] = -10000.0
+
+                # NOTE: We do NOT block image-to-image or image-to-text attention
+                # This allows proper visual blending between regions while preventing
+                # text prompt cross-contamination
 
                 # Set attention mask parameters for ComfyUI
                 n[1]['attention_mask'] = attention_mask
