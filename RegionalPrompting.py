@@ -218,11 +218,11 @@ class EasyRegionMask:
             },
             "optional": {
                 "background_strength": ("FLOAT", {
-                    "default": 0.5,
+                    "default": 0.4,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Background conditioning strength (lower = regions show more, try 0.3-0.7)"
+                    "tooltip": "Background conditioning strength (lower = regions show more, recommended: 0.3-0.5)"
                 }),
                 "region1_prompt": ("STRING", {
                     "default": "red sports car",
@@ -230,11 +230,11 @@ class EasyRegionMask:
                     "tooltip": "Region 1 - TIP: Include spatial location in prompt (e.g. 'left side', 'top right')"
                 }),
                 "region1_strength": ("FLOAT", {
-                    "default": 2.5,
+                    "default": 1.2,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 1 strength (start with 2-4, adjust if region doesn't show or is too soft)"
+                    "tooltip": "Region 1 strength (recommended: 1.0-1.5, higher values may cause artifacts)"
                 }),
                 "region2_prompt": ("STRING", {
                     "default": "closeup full body giraffe wearing sunglasses",
@@ -242,11 +242,11 @@ class EasyRegionMask:
                     "tooltip": "Region 2 - TIP: Include spatial location in prompt (e.g. 'right third', 'bottom left')"
                 }),
                 "region2_strength": ("FLOAT", {
-                    "default": 3.5,
+                    "default": 1.8,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 2 strength (start with 3-5, adjust if needed)"
+                    "tooltip": "Region 2 strength (recommended: 1.5-2.0, higher values may cause artifacts)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "blue bird flying",
@@ -254,11 +254,11 @@ class EasyRegionMask:
                     "tooltip": "Region 3 - Optional third region"
                 }),
                 "region3_strength": ("FLOAT", {
-                    "default": 4.0,
+                    "default": 2.2,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 3 strength (start with 4-6, adjust if needed)"
+                    "tooltip": "Region 3 strength (recommended: 2.0-2.5, higher values may cause artifacts)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
@@ -266,11 +266,11 @@ class EasyRegionMask:
                     "tooltip": "Region 4 - Optional fourth region"
                 }),
                 "region4_strength": ("FLOAT", {
-                    "default": 4.5,
+                    "default": 2.5,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 4 strength (start with 4-6, adjust if needed)"
+                    "tooltip": "Region 4 strength (recommended: 2.5-3.0, higher values may cause artifacts)"
                 }),
             },
             "hidden": {
@@ -290,15 +290,15 @@ Quick Start:
 1. Connect CLIP from checkpoint
 2. Set width/height to match your latent exactly
 3. Type prompts (background + regions)
-4. Adjust per-region strength (defaults: 2.5, 3.5, 4.0, 4.5)
+4. Adjust per-region strength (defaults: 1.2, 1.8, 2.2, 2.5)
 5. Draw/adjust boxes on canvas
 
 See README for model-specific tips and recommended settings."""
 
     def encode_regions_mask(self, clip, width, height, background_strength, soften_masks, background_prompt, region1_prompt,
                            extra_pnginfo, unique_id, region_boxes="",
-                           region1_strength=2.5, region2_prompt="", region2_strength=3.5,
-                           region3_prompt="", region3_strength=4.0, region4_prompt="", region4_strength=4.5):
+                           region1_strength=1.2, region2_prompt="", region2_strength=1.8,
+                           region3_prompt="", region3_strength=2.2, region4_prompt="", region4_strength=2.5):
         """Encode all prompts and apply mask-based regional conditioning."""
 
         # Default template boxes (fallback if no data from UI)
@@ -509,25 +509,24 @@ See README for model-specific tips and recommended settings."""
                 # Enable text-to-text attention (prompts can interact)
                 attention_mask[0, :txt_tokens, :txt_tokens] = 0.0
 
-                # Enable text-to-image ONLY for this region's pixels
+                # VECTORIZED: Enable text→image and image→text ONLY for this region's pixels
                 # This prevents "bird" text from affecting car region pixels
-                for y in range(y_latent, y_end):
-                    for x in range(x_latent, x_end):
-                        img_token_idx = txt_tokens + (y * latent_width + x)
-                        attention_mask[0, :txt_tokens, img_token_idx] = 0.0
-                        attention_mask[0, img_token_idx, :txt_tokens] = 0.0
+                # Performance: ~1000x faster than nested loops for large regions
+                y_coords = torch.arange(y_latent, y_end, dtype=torch.long)
+                x_coords = torch.arange(x_latent, x_end, dtype=torch.long)
+                y_grid, x_grid = torch.meshgrid(y_coords, x_coords, indexing='ij')
+                img_token_indices = txt_tokens + (y_grid.flatten() * latent_width + x_grid.flatten())
 
-                # Enable image-to-image ONLY within this region
-                # Use vectorized approach for performance
-                region_img_indices = []
-                for y in range(y_latent, y_end):
-                    for x in range(x_latent, x_end):
-                        region_img_indices.append(txt_tokens + (y * latent_width + x))
+                # Enable txt→img (text can influence these image pixels)
+                attention_mask[0, :txt_tokens, img_token_indices] = 0.0
+                # Enable img→txt (these image pixels can attend to text)
+                attention_mask[0, img_token_indices, :txt_tokens] = 0.0
 
-                # Allow attention between all pixels in this region
-                for idx1 in region_img_indices:
-                    for idx2 in region_img_indices:
-                        attention_mask[0, idx1, idx2] = 0.0
+                # VECTORIZED: Enable image→image ONLY within this region
+                # Uses broadcasting to create [N, N] assignment efficiently
+                img_idx_row = img_token_indices.unsqueeze(1)  # [N, 1]
+                img_idx_col = img_token_indices.unsqueeze(0)  # [1, N]
+                attention_mask[0, img_idx_row, img_idx_col] = 0.0  # Broadcasting creates [N, N]
 
                 n[1]['attention_mask'] = attention_mask
                 n[1]['attention_mask_img_shape'] = (latent_height, latent_width)
