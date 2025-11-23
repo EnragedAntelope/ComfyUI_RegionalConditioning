@@ -187,8 +187,9 @@ export function computeCanvasSize(node, size) {
 	// Set canvas height
 	node.canvasHeight = CANVAS_HEIGHT;
 
-	// Ensure node is tall enough with generous bottom margin
-	const BOTTOM_MARGIN = 80;  // Extra space to prevent canvas overlap
+	// Ensure node is tall enough to fit all widgets
+	// Canvas is drawn directly to LiteGraph canvas, no HTML element overlay
+	const BOTTOM_MARGIN = 10;  // Small margin for visual breathing room
 	const requiredHeight = y + BOTTOM_MARGIN;
 	if (node.size[1] < requiredHeight) {
 		node.size[1] = requiredHeight;

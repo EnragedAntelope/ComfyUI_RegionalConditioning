@@ -11,20 +11,13 @@ function addEasyRegionCanvas(node, app) {
 	const widget = {
 		type: "customCanvas",
 		name: "EasyRegion-Canvas",
-		get value() {
-			return this.canvas.value;
-		},
-		set value(x) {
-			this.canvas.value = x;
-		},
+		value: {},
 		draw: function (ctx, node, widgetWidth, widgetY) {
 
 			if (!node.canvasHeight) {
 				computeCanvasSize(node, node.size)
 			}
 
-			const visible = true
-			const t = ctx.getTransform();
 			const margin = 10
 			const border = 2
 
@@ -44,27 +37,6 @@ function addEasyRegionCanvas(node, app) {
 				}
 			}
 			const index = indexWidget ? Math.round(indexWidget.value) : 0;
-
-			// Ensure canvas element has proper internal dimensions
-			const canvasDisplayWidth = Math.max(200, widgetWidth * t.a);
-			const canvasDisplayHeight = Math.max(200, widgetHeight * t.d);
-
-			// Set canvas internal resolution (for drawing)
-			this.canvas.width = widgetWidth;
-			this.canvas.height = widgetHeight;
-
-			Object.assign(this.canvas.style, {
-				left: `${t.e}px`,
-				top: `${t.f + (widgetY*t.d)}px`,
-				width: `${canvasDisplayWidth}px`,
-				height: `${canvasDisplayHeight}px`,
-				position: "absolute",
-				zIndex: 1,
-				fontSize: `${t.d * 10.0}px`,
-				pointerEvents: "none",
-			});
-
-			this.canvas.hidden = !visible;
 
 			let backgroundWidth = width * scale
 			let backgroundHeight = height * scale
@@ -175,30 +147,7 @@ function addEasyRegionCanvas(node, app) {
 		},
 	};
 
-	widget.canvas = document.createElement("canvas");
-	widget.canvas.className = "dave-custom-canvas";
-
-	// Set initial canvas dimensions (will be updated by draw function)
-	widget.canvas.width = 512;
-	widget.canvas.height = 512;
-
-	widget.parent = node;
-	document.body.appendChild(widget.canvas);
-
 	node.addCustomWidget(widget);
-
-	app.canvas.onDrawBackground = function () {
-		for (let n in app.graph._nodes) {
-			n = app.graph._nodes[n];
-			for (let w in n.widgets) {
-				let wid = n.widgets[w];
-				if (Object.hasOwn(wid, "canvas")) {
-					wid.canvas.style.left = -8000 + "px";
-					wid.canvas.style.position = "absolute";
-				}
-			}
-		}
-	};
 
 	node.onResize = function (size) {
 		computeCanvasSize(node, size);
@@ -286,14 +235,6 @@ app.registerExtension({
 				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)}, {tooltip: "Width of selected region in pixels"})
 				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)}, {tooltip: "Height of selected region in pixels"})
 				// Strength slider removed - now using per-region strength inputs from Python
-
-				this.onRemoved = function () {
-					for (let y in this.widgets) {
-						if (this.widgets[y].canvas) {
-							this.widgets[y].canvas.remove();
-						}
-					}
-				};
 
 				this.onSelected = function () {
 					this.selected = true
@@ -388,14 +329,6 @@ app.registerExtension({
 				CUSTOM_INT(this, "box_w", 0, function (v, _, node) {transformFunc(this, v, node, 2)}, {tooltip: "Width of selected region in pixels"})
 				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)}, {tooltip: "Height of selected region in pixels"})
 				// Strength slider removed - now using per-region strength inputs from Python
-
-				this.onRemoved = function () {
-					for (let y in this.widgets) {
-						if (this.widgets[y].canvas) {
-							this.widgets[y].canvas.remove();
-						}
-					}
-				};
 
 				this.onSelected = function () {
 					this.selected = true
