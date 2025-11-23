@@ -49,7 +49,11 @@ class EasyRegionSimple:
                     "tooltip": "Region 4 - Fourth region/box (see canvas below)"
                 }),
             },
-            "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
+            "hidden": {
+                "extra_pnginfo": "EXTRA_PNGINFO",
+                "unique_id": "UNIQUE_ID",
+                "region_boxes": "STRING"
+            },
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -74,21 +78,30 @@ How to use:
 
 Compatible: SD1.5, SD2.x, SDXL"""
 
-    def encode_regions(self, clip, background_prompt, region1_prompt, extra_pnginfo, unique_id,
+    def encode_regions(self, clip, background_prompt, region1_prompt, extra_pnginfo, unique_id, region_boxes="",
                       region2_prompt="", region3_prompt="", region4_prompt=""):
         """Encode all prompts and apply regional conditioning."""
 
-        # Default template boxes (if workflow not saved yet)
-        # Region 1 (red sports car): left side, 200x250px starting at (50, 150)
-        # Region 2 (street vendor): right side, 180x250px starting at (280, 150)
+        # Default template boxes (fallback if no data from UI)
         values = [
-            [50, 150, 200, 250, 1.0],   # Region 1
-            [280, 150, 180, 250, 1.0]    # Region 2
+            [41, 102, 138, 307, 1.0],   # Region 1 - percentage-based for 512x512
+            [360, 77, 140, 348, 1.0]    # Region 2 - percentage-based for 512x512
         ]
         resolutionX = 512
         resolutionY = 512
 
-        # Get region data from UI (overrides defaults if workflow saved)
+        # First try to parse from hidden widget (works on fresh nodes)
+        if region_boxes:
+            try:
+                import json
+                parsed = json.loads(region_boxes)
+                if parsed and len(parsed) > 0:
+                    values = parsed
+                    print(f"ℹ️  Using region boxes from widget: {values}")
+            except Exception as e:
+                print(f"⚠️  Failed to parse region_boxes widget: {e}")
+
+        # Fallback: Get region data from saved workflow (overrides if available)
         try:
             if extra_pnginfo and "workflow" in extra_pnginfo and "nodes" in extra_pnginfo["workflow"]:
                 for node in extra_pnginfo["workflow"]["nodes"]:
@@ -260,7 +273,11 @@ class EasyRegionMask:
                     "tooltip": "Region 4 strength (start with 5-7, adjust if needed)"
                 }),
             },
-            "hidden": {"extra_pnginfo": "EXTRA_PNGINFO", "unique_id": "UNIQUE_ID"},
+            "hidden": {
+                "extra_pnginfo": "EXTRA_PNGINFO",
+                "unique_id": "UNIQUE_ID",
+                "region_boxes": "STRING"
+            },
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -279,21 +296,29 @@ Quick Start:
 See README for model-specific tips and recommended settings."""
 
     def encode_regions_mask(self, clip, width, height, background_strength, soften_masks, background_prompt, region1_prompt,
-                           extra_pnginfo, unique_id,
+                           extra_pnginfo, unique_id, region_boxes="",
                            region1_strength=2.5, region2_prompt="", region2_strength=3.5,
                            region3_prompt="", region3_strength=4.0, region4_prompt="", region4_strength=4.5):
         """Encode all prompts and apply mask-based regional conditioning."""
 
-        # Default template boxes (if workflow not saved yet)
-        # Region 1 (red sports car): left third, 300x600px starting at (50, 200)
-        # Region 2 (giraffe): right third, 300x700px starting at (674, 150)
-        # NOTE: Strength values in 'values' array are ignored - using per-region strength inputs instead
+        # Default template boxes (fallback if no data from UI)
         values = [
-            [50, 200, 300, 600, 0.0],   # Region 1 - strength from region1_strength input
-            [674, 150, 300, 700, 0.0]    # Region 2 - strength from region2_strength input
+            [82, 205, 277, 614, 0.0],   # Region 1 - percentage-based for 1024x1024
+            [717, 154, 287, 696, 0.0]   # Region 2 - percentage-based for 1024x1024
         ]
 
-        # Get region data from UI (overrides defaults if workflow saved)
+        # First try to parse from hidden widget (works on fresh nodes)
+        if region_boxes:
+            try:
+                import json
+                parsed = json.loads(region_boxes)
+                if parsed and len(parsed) > 0:
+                    values = parsed
+                    print(f"ℹ️  Using region boxes from widget: {values}")
+            except Exception as e:
+                print(f"⚠️  Failed to parse region_boxes widget: {e}")
+
+        # Fallback: Get region data from saved workflow (overrides if available)
         try:
             if extra_pnginfo and "workflow" in extra_pnginfo and "nodes" in extra_pnginfo["workflow"]:
                 for node in extra_pnginfo["workflow"]["nodes"]:

@@ -184,6 +184,13 @@ app.registerExtension({
 
 				this.serialize_widgets = true;
 
+				// Add hidden widget to pass region boxes to Python
+				this.addWidget("text", "region_boxes", JSON.stringify(this.properties["values"]), () => {}, {serialize: true});
+				// Hide the widget (it's just for data passing)
+				const boxWidget = this.widgets[this.widgets.length - 1];
+				boxWidget.type = "converted-widget";
+				boxWidget.hidden = true;
+
 				// Add canvas after the prompt inputs
 				addEasyRegionCanvas(this, app)
 
@@ -278,6 +285,13 @@ app.registerExtension({
 
 				this.serialize_widgets = true;
 
+				// Add hidden widget to pass region boxes to Python
+				this.addWidget("text", "region_boxes", JSON.stringify(this.properties["values"]), () => {}, {serialize: true});
+				// Hide the widget (it's just for data passing)
+				const boxWidget = this.widgets[this.widgets.length - 1];
+				boxWidget.type = "converted-widget";
+				boxWidget.hidden = true;
+
 				// Add canvas after the prompt inputs
 				addEasyRegionCanvas(this, app)
 
@@ -369,6 +383,12 @@ app.registerExtension({
 							});
 							node.properties["values"] = scaledValues;
 
+							// Update hidden region_boxes widget
+							const boxWidget = node.widgets.find(w => w.name === "region_boxes");
+							if (boxWidget) {
+								boxWidget.value = JSON.stringify(scaledValues);
+							}
+
 							// Update the box widgets to show new values
 							const regionSelectorValue = node.widgets[node.index]?.value || 1;
 							const arrayIndex = regionSelectorValue - 1;
@@ -414,6 +434,12 @@ app.registerExtension({
 								];
 							});
 							node.properties["values"] = scaledValues;
+
+							// Update hidden region_boxes widget
+							const boxWidget = node.widgets.find(w => w.name === "region_boxes");
+							if (boxWidget) {
+								boxWidget.value = JSON.stringify(scaledValues);
+							}
 
 							// Update the box widgets to show new values
 							const regionSelectorValue = node.widgets[node.index]?.value || 1;

@@ -48,6 +48,12 @@ export function transformFunc(widget, value, node, index) {
 	if (node.widgets_values) {
 		node.widgets_values[2] = node.properties["values"].join()
 	}
+
+	// Update hidden region_boxes widget with current values
+	const boxWidget = node.widgets.find(w => w.name === "region_boxes");
+	if (boxWidget) {
+		boxWidget.value = JSON.stringify(node.properties["values"]);
+	}
 }
 
 export function swapInputs(node, indexA, indexB) {
