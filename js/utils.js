@@ -134,6 +134,35 @@ export function getDrawColor(percent, alpha) {
 	return `#${f(0)}${f(8)}${f(4)}${alpha}`;
 }
 
+/**
+ * Calculate default region positions as percentages of width/height
+ * Ensures results are divisible by 8 for latent space compatibility
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ * @returns {Array} Array of [x, y, w, h, strength] for 2 regions
+ */
+export function calculateDefaultRegions(width, height) {
+	// Round to nearest multiple of 8
+	const round8 = (val) => Math.round(val / 8) * 8;
+
+	// Region 1: Left third (8% to 35% of width)
+	const region1_x = round8(width * 0.08);
+	const region1_w = round8(width * 0.27);
+	const region1_y = round8(height * 0.20);  // Start at 20% down
+	const region1_h = round8(height * 0.60);  // 60% of height
+
+	// Region 2: Right third (70% to 98% of width)
+	const region2_x = round8(width * 0.70);
+	const region2_w = round8(width * 0.28);
+	const region2_y = round8(height * 0.15);  // Start at 15% down
+	const region2_h = round8(height * 0.68);  // 68% of height (taller for giraffe)
+
+	return [
+		[region1_x, region1_y, region1_w, region1_h, 2.0],  // Region 1 - left third
+		[region2_x, region2_y, region2_w, region2_h, 2.0]   // Region 2 - right third
+	];
+}
+
 export function computeCanvasSize(node, size) {
 	if (!node.widgets || node.widgets.length === 0 || node.widgets[0].last_y == null) return;
 
@@ -158,8 +187,9 @@ export function computeCanvasSize(node, size) {
 	// Set canvas height
 	node.canvasHeight = CANVAS_HEIGHT;
 
-	// Ensure node is tall enough
-	const requiredHeight = y + 20;  // 20px bottom margin
+	// Ensure node is tall enough with generous bottom margin
+	const BOTTOM_MARGIN = 80;  // Extra space to prevent canvas overlap
+	const requiredHeight = y + BOTTOM_MARGIN;
 	if (node.size[1] < requiredHeight) {
 		node.size[1] = requiredHeight;
 		if (node.graph) {
