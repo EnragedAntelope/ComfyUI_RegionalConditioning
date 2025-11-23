@@ -6,6 +6,49 @@
 
 ---
 
+## Comprehensive Code Review - November 23, 2025
+
+### Critical Bugfix: Attention Masking API Updated
+
+**Issue:** Attention masking was causing `KeyError: 'attention_mask_img_shape'` crash during sampling.
+
+**Root Cause:** ComfyUI PR #5942 implementation requires TWO fields for attention masking:
+1. `attention_mask` - the binary mask tensor
+2. `attention_mask_img_shape` - tuple of (height, width) for reference dimensions
+
+**Fix Applied:** Added `attention_mask_img_shape` parameter (RegionalPrompting.py:483)
+```python
+n[1]['attention_mask'] = mask  # Binary mask for spatial control
+n[1]['attention_mask_img_shape'] = (latent_height, latent_width)  # Required by API
+```
+
+**Status:** ✅ Fixed - attention masking now works correctly with ComfyUI 0.3.71+
+
+**References:**
+- [ComfyUI PR #5942](https://github.com/comfyanonymous/ComfyUI/pull/5942)
+- [Attention Mask Implementation Details](https://github.com/comfyanonymous/ComfyUI/pull/5942#discussion)
+
+---
+
+### Documentation Corrections (November 23, 2025)
+
+**Fixed Issues:**
+1. ✅ **Tooltip Inconsistency:** Region 4 strength tooltip corrected from "5-7" to "4-6" to match tested optimal value (4.5)
+2. ✅ **README Error:** Removed "Advanced Nodes" section documenting non-existent nodes (Multi Area Conditioning, Multi Area Conditioning Mask, Multi Latent Composite) - these were from the old ComfyUI_RegionalConditioning repo
+3. ✅ **Variable Passing:** Verified all JS→Python data flow is correct:
+   - ✅ `region_boxes` hidden widget serialization working
+   - ✅ Per-region strength inputs (Mask-Based only) working correctly
+   - ✅ Width/height sync (Mask-Based only) working correctly
+
+**Known Design Differences (Intentional):**
+- **Area-Based node** does NOT have per-region strength controls (uses hardcoded 1.0 from canvas values)
+  - Reason: Area-based conditioning for SD/SDXL typically works well with strength 1.0
+  - Future enhancement: Could add per-region strength for advanced users
+- **Area-Based node** does NOT have width/height inputs (uses fixed 512x512 canvas)
+  - Reason: Area-based conditioning auto-detects from latent, doesn't need explicit dimensions
+
+---
+
 ## Attention Masking (Latest Feature - Nov 23, 2025)
 
 **ComfyUI Requirement:** PR #5942 (merged ~1 year ago, widely available)

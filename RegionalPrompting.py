@@ -270,7 +270,7 @@ class EasyRegionMask:
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 4 strength (start with 5-7, adjust if needed)"
+                    "tooltip": "Region 4 strength (start with 4-6, adjust if needed)"
                 }),
             },
             "hidden": {
@@ -480,6 +480,7 @@ See README for model-specific tips and recommended settings."""
                 # Attention mask (binary, no feathering) forces model to ONLY attend to this region
                 # Prevents "bird center-frame" when region is upper-right
                 n[1]['attention_mask'] = mask  # Binary 1.0 values, precise spatial control
+                n[1]['attention_mask_img_shape'] = (latent_height, latent_width)  # Required by ComfyUI API
                 combined_conditioning.append(n)
 
         print(f"   ✅ Generated {len(combined_conditioning)} conditioning blocks\n")

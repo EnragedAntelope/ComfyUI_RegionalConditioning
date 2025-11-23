@@ -97,14 +97,6 @@ Checkpoint Loader
 - Use EasyRegion (Area-Based) node instead
 - Area-based conditioning doesn't use masks
 
-## Advanced Nodes
-
-Original nodes available for complex workflows:
-
-- **Multi Area Conditioning**: Area-based, requires external CLIP encode
-- **Multi Area Conditioning Mask**: Mask-based, requires external CLIP encode
-- **Multi Latent Composite**: Visual latent compositing with feathering
-
 ## Credits
 
 Based on visual area conditioning by [Davemane42](https://github.com/Davemane42).
