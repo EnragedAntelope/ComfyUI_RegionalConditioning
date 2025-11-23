@@ -309,7 +309,7 @@ app.registerExtension({
 							node.widgets[offset + 3].value = values[arrayIndex][3]  // box_h
 						}
 					},
-					{ step: 10, min: 1, max: 2, tooltip: "Select which region to edit (use box_x/y/w/h below to adjust position)" }
+					{ step: 10, min: 1, max: 3, tooltip: "Select which region to edit (use box_x/y/w/h below to adjust position)" }
 				)
 
 				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)}, {tooltip: "X position of selected region (pixels from left)"})
@@ -485,7 +485,7 @@ app.registerExtension({
 							node.widgets[offset + 3].value = values[arrayIndex][3]  // box_h
 						}
 					},
-					{ step: 10, min: 1, max: 2, tooltip: "Select which region to edit (use box_x/y/w/h below to adjust position)" }
+					{ step: 10, min: 1, max: 3, tooltip: "Select which region to edit (use box_x/y/w/h below to adjust position)" }
 				)
 
 				CUSTOM_INT(this, "box_x", 0, function (v, _, node) {transformFunc(this, v, node, 0)}, {tooltip: "X position of selected region (pixels from left)"})

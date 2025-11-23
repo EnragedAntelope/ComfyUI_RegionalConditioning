@@ -354,11 +354,25 @@ See README for model-specific tips and recommended settings."""
         if num_regions > 4:
             print(f"⚠️  Warning: {num_regions} regions detected. Most models work best with 3-4 regions maximum.")
 
+        # Concatenate background to regional prompts for visual coherence
+        # This ensures all regions share the same scene context
+        prompts_final = []
+        for i, prompt in enumerate(prompts):
+            if i == 0:  # Background
+                prompts_final.append(prompt if prompt and prompt.strip() else "")
+            else:  # Regional prompts - prepend background for unified composition
+                if prompt and prompt.strip():
+                    combined = f"{background_prompt}, {prompt}" if background_prompt and background_prompt.strip() else prompt
+                    prompts_final.append(combined)
+                    print(f"   📝 Region {i} combined prompt: '{combined[:60]}...'")
+                else:
+                    prompts_final.append("")
+
         # Encode each prompt using CLIP
         # ComfyUI's CLIP object handles multi-encoder complexity internally
         encoded_conditionings = []
 
-        for prompt in prompts:
+        for prompt in prompts_final:
             if prompt and prompt.strip():
                 tokens = clip.tokenize(prompt)
                 cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
@@ -473,50 +487,12 @@ See README for model-specific tips and recommended settings."""
                         if x_end - 1 - edge_idx >= x_latent:
                             feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx] = torch.minimum(feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx], torch.tensor(fade))
 
-            # Apply mask-based conditioning with optimized attention masking
+            # Apply mask-based conditioning (standard approach)
             for t in encoded_conditionings[i]:
                 n = [t[0], t[1].copy()]
                 n[1]['mask'] = feathered_mask  # Feathered for smooth visual blending
                 n[1]['mask_strength'] = max(0.0, min(10.0, strength))
                 n[1]['set_area_to_bounds'] = False
-
-                # Create attention mask for precise regional control (Flux/DiT models)
-                # KEY INSIGHT: Only mask text-to-image cross-contamination
-                # Allow image-to-image attention for proper blending
-                cond_tensor = t[0]  # [batch, seq_len, hidden_dim]
-                txt_tokens = cond_tensor.shape[1]  # Number of text tokens from encoding
-                img_tokens = latent_height * latent_width  # Flattened image tokens
-                total_tokens = txt_tokens + img_tokens
-
-                # Initialize with 0.0 (allow all attention by default)
-                attention_mask = torch.zeros((1, total_tokens, total_tokens), dtype=torch.float32)
-
-                # Block text-to-image attention for image tokens OUTSIDE this region
-                # This prevents "bird" prompt from affecting car region, etc.
-                # Use vectorized operations for speed
-
-                # Create boolean mask for this region's image tokens
-                region_mask = torch.zeros(img_tokens, dtype=torch.bool)
-                for y in range(y_latent, y_end):
-                    start_idx = y * latent_width + x_latent
-                    end_idx = y * latent_width + x_end
-                    region_mask[start_idx:end_idx] = True
-
-                # Block text attending to image tokens OUTSIDE this region
-                # Text tokens (rows 0:txt_tokens) to image tokens (cols txt_tokens:total_tokens)
-                for img_idx in range(img_tokens):
-                    if not region_mask[img_idx]:
-                        # This image token is outside the region - block text from attending to it
-                        attention_mask[0, :txt_tokens, txt_tokens + img_idx] = -10000.0
-
-                # NOTE: We do NOT block image-to-image or image-to-text attention
-                # This allows proper visual blending between regions while preventing
-                # text prompt cross-contamination
-
-                # Set attention mask parameters for ComfyUI
-                n[1]['attention_mask'] = attention_mask
-                n[1]['attention_mask_img_shape'] = (latent_height, latent_width)
-
                 combined_conditioning.append(n)
 
         print(f"   ✅ Generated {len(combined_conditioning)} conditioning blocks\n")

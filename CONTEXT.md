@@ -49,68 +49,87 @@ n[1]['attention_mask_img_shape'] = (latent_height, latent_width)  # Required by 
 
 ---
 
-## Attention Masking (Latest Feature - Nov 23, 2025)
+## Attention Masking - DOES NOT WORK for Multiple Regions (Tested Nov 23, 2025)
 
-**ComfyUI Requirement:** PR #5942 (merged ~1 year ago, widely available)
+**Status:** ❌ **REMOVED** - Causes region conflicts and degraded results
 
-### Problem Solved: Spatial Mismatch
+### What We Tried
 
-When you prompt "flying bird" with a region in the upper-right, but the model naturally wants to generate birds center-frame, standard mask conditioning alone may not be strong enough to force the generation into your region.
+Implemented ComfyUI PR #5942 attention masking to force regions to stay in correct locations.
 
-### Solution: Triple-Mask System
+### Why It Failed
 
-We now use **THREE complementary systems** working together:
+**Problem:** Multiple conditioning blocks with conflicting attention masks:
+- Region 1: "My text can ONLY attend to my pixels" (attention_mask blocks others)
+- Region 2: "My text can ONLY attend to my pixels" (attention_mask blocks others)
+- Region 3: "My text can ONLY attend to my pixels" (attention_mask blocks others)
 
-1. **`mask` (feathered)** - Visual blending
+**Result:** Regions CONFLICT when combined:
+- Largest/strongest region wins (e.g., giraffe at 270K pixels, strength 3.5)
+- Other regions disappear entirely
+- OR all regions generate with independent backgrounds (no blending)
+
+**Testing confirmed:**
+- ✅ Strict attention masking: Regions appeared but with isolated backgrounds
+- ❌ Relaxed attention masking: Only ONE region appeared (others lost)
+- ✅ NO attention masking + background concatenation: ALL regions appear WITH blending
+
+### The CORRECT Solution
+
+**Use standard mask + mask_strength + background concatenation:**
+
+1. **`mask` (feathered)** - Spatial control
    - Soft gradient edges if `soften_masks=True`
+   - Binary 1.0 values (not 0.8)
    - Smooth visual composition
 
 2. **`mask_strength`** - Conditioning intensity
    - Range: 0.0 to 10.0 (default 2.5-4.5)
    - Controls HOW STRONGLY prompt is applied
+   - Higher = region content more prominent
 
-3. **`attention_mask` (binary)** - Spatial forcing **[NEW!]**
-   - Always binary 1.0 values, NO feathering
-   - Forces model to ONLY attend to this region
-   - Prevents "bird center-frame" when region is upper-right
-   - Model-agnostic (Flux, SD3, SDXL, etc.)
+3. **Background concatenation** - Unified composition **[KEY!]**
+   - Prepend background prompt to EACH regional prompt
+   - Example: "photo of city street at night, red sports car"
+   - Ensures all regions share same scene context
+   - Natural blending without conflicts
 
 ### Implementation Details
 
-**Code:** `RegionalPrompting.py:450-483`
+**Code:** `RegionalPrompting.py:357-369`
 
 ```python
-# Create binary mask
-mask[0, y_latent:y_end, x_latent:x_end] = 1.0
+# Concatenate background to regional prompts for visual coherence
+prompts_final = []
+for i, prompt in enumerate(prompts):
+    if i == 0:  # Background
+        prompts_final.append(prompt)
+    else:  # Regional prompts
+        if prompt and prompt.strip():
+            # Prepend background for unified composition
+            combined = f"{background_prompt}, {prompt}"
+            prompts_final.append(combined)
+```
 
-# Clone for feathering (visual blending only)
-feathered_mask = mask.clone()
-if soften_masks:
-    # Apply feathering to feathered_mask...
-
-# Apply BOTH masks to conditioning
-n[1]['mask'] = feathered_mask      # Soft edges for visual blending
+**Then apply standard mask conditioning:**
+```python
+n[1]['mask'] = feathered_mask      # Soft edges for blending
 n[1]['mask_strength'] = strength   # Intensity (2.5-4.5)
-n[1]['attention_mask'] = mask      # Binary spatial forcing
+n[1]['set_area_to_bounds'] = False # Mask-based mode
 ```
 
 **Key Points:**
-- `mask` stays binary (1.0) for attention control
-- `feathered_mask` gets gradient edges for smooth visuals
-- Both applied to same conditioning - they work together
-- Strength values (2.5-4.5) still needed for intensity control
+- Background context in EVERY regional prompt = unified scene
+- Feathered masks provide smooth visual transitions
+- Strength values control prominence (2.5-4.5 for regions, 0.5 for background)
+- No attention masking = no conflicts between regions
 
-### Why Both Masks?
+### Why This Works
 
-- **Without attention_mask:** Bird might leak to center-frame where model naturally places birds
-- **With attention_mask:** Model forced to respect region boundaries precisely
-- **Feathering still needed:** For smooth visual transitions between regions
-
-### Performance
-
-- Negligible overhead (<1% slower)
-- Works with all mask-based models
-- Degrades gracefully if ComfyUI doesn't support it (just uses standard mask)
+- **Unified context:** All regions know about the "city street at night" scene
+- **No conflicts:** Standard mask conditioning doesn't create attention mask conflicts
+- **Natural blending:** Feathering + shared background = cohesive composition
+- **Model-agnostic:** Works with Flux, SD3, SDXL, etc.
 
 ---
 
