@@ -447,6 +447,10 @@ See README for model-specific tips and recommended settings."""
             print(f"      Latent: x={x_latent}, y={y_latent}, w={w_latent}, h={h_latent}")
             print(f"      Mask: binary 1.0, Conditioning strength: {strength}")
 
+            # Create separate feathered mask for visual blending
+            # Keep original mask binary for attention control
+            feathered_mask = mask.clone()
+
             # Apply feathering if enabled (gentle edge blending)
             if soften_masks:
                 # Apply gaussian-like feather at edges (40-60px = 5-8 latent pixels)
@@ -456,23 +460,26 @@ See README for model-specific tips and recommended settings."""
                         fade = (edge_idx + 1) / feather_size  # 0.0 to 1.0 gradient
                         # Top edge
                         if y_latent + edge_idx < y_end:
-                            mask[0, y_latent + edge_idx, x_latent:x_end] = fade
+                            feathered_mask[0, y_latent + edge_idx, x_latent:x_end] = fade
                         # Bottom edge
                         if y_end - 1 - edge_idx >= y_latent:
-                            mask[0, y_end - 1 - edge_idx, x_latent:x_end] = fade
+                            feathered_mask[0, y_end - 1 - edge_idx, x_latent:x_end] = fade
                         # Left edge
                         if x_latent + edge_idx < x_end:
-                            mask[0, y_latent:y_end, x_latent + edge_idx] = torch.minimum(mask[0, y_latent:y_end, x_latent + edge_idx], torch.tensor(fade))
+                            feathered_mask[0, y_latent:y_end, x_latent + edge_idx] = torch.minimum(feathered_mask[0, y_latent:y_end, x_latent + edge_idx], torch.tensor(fade))
                         # Right edge
                         if x_end - 1 - edge_idx >= x_latent:
-                            mask[0, y_latent:y_end, x_end - 1 - edge_idx] = torch.minimum(mask[0, y_latent:y_end, x_end - 1 - edge_idx], torch.tensor(fade))
+                            feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx] = torch.minimum(feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx], torch.tensor(fade))
 
-            # Apply mask to conditioning
+            # Apply both standard mask and attention mask to conditioning
             for t in encoded_conditionings[i]:
                 n = [t[0], t[1].copy()]
-                n[1]['mask'] = mask
-                n[1]['mask_strength'] = max(0.0, min(10.0, strength))  # FIXED: was 'strength', should be 'mask_strength'
+                n[1]['mask'] = feathered_mask  # Feathered for smooth visual blending
+                n[1]['mask_strength'] = max(0.0, min(10.0, strength))
                 n[1]['set_area_to_bounds'] = False
+                # Attention mask (binary, no feathering) forces model to ONLY attend to this region
+                # Prevents "bird center-frame" when region is upper-right
+                n[1]['attention_mask'] = mask  # Binary 1.0 values, precise spatial control
                 combined_conditioning.append(n)
 
         print(f"   ✅ Generated {len(combined_conditioning)} conditioning blocks\n")

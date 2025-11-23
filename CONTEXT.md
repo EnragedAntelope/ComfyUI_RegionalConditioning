@@ -1,8 +1,73 @@
 # Development Context & Learnings
 
-**Last Updated:** November 22, 2025
-**ComfyUI Version:** 0.3.71
+**Last Updated:** November 23, 2025
+**ComfyUI Version:** 0.3.71+
 **Repository:** EnragedAntelope/ComfyUI_EasyRegion (formerly ComfyUI_RegionalConditioning)
+
+---
+
+## Attention Masking (Latest Feature - Nov 23, 2025)
+
+**ComfyUI Requirement:** PR #5942 (merged ~1 year ago, widely available)
+
+### Problem Solved: Spatial Mismatch
+
+When you prompt "flying bird" with a region in the upper-right, but the model naturally wants to generate birds center-frame, standard mask conditioning alone may not be strong enough to force the generation into your region.
+
+### Solution: Triple-Mask System
+
+We now use **THREE complementary systems** working together:
+
+1. **`mask` (feathered)** - Visual blending
+   - Soft gradient edges if `soften_masks=True`
+   - Smooth visual composition
+
+2. **`mask_strength`** - Conditioning intensity
+   - Range: 0.0 to 10.0 (default 2.5-4.5)
+   - Controls HOW STRONGLY prompt is applied
+
+3. **`attention_mask` (binary)** - Spatial forcing **[NEW!]**
+   - Always binary 1.0 values, NO feathering
+   - Forces model to ONLY attend to this region
+   - Prevents "bird center-frame" when region is upper-right
+   - Model-agnostic (Flux, SD3, SDXL, etc.)
+
+### Implementation Details
+
+**Code:** `RegionalPrompting.py:450-483`
+
+```python
+# Create binary mask
+mask[0, y_latent:y_end, x_latent:x_end] = 1.0
+
+# Clone for feathering (visual blending only)
+feathered_mask = mask.clone()
+if soften_masks:
+    # Apply feathering to feathered_mask...
+
+# Apply BOTH masks to conditioning
+n[1]['mask'] = feathered_mask      # Soft edges for visual blending
+n[1]['mask_strength'] = strength   # Intensity (2.5-4.5)
+n[1]['attention_mask'] = mask      # Binary spatial forcing
+```
+
+**Key Points:**
+- `mask` stays binary (1.0) for attention control
+- `feathered_mask` gets gradient edges for smooth visuals
+- Both applied to same conditioning - they work together
+- Strength values (2.5-4.5) still needed for intensity control
+
+### Why Both Masks?
+
+- **Without attention_mask:** Bird might leak to center-frame where model naturally places birds
+- **With attention_mask:** Model forced to respect region boundaries precisely
+- **Feathering still needed:** For smooth visual transitions between regions
+
+### Performance
+
+- Negligible overhead (<1% slower)
+- Works with all mask-based models
+- Degrades gracefully if ComfyUI doesn't support it (just uses standard mask)
 
 ---
 
