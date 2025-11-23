@@ -494,6 +494,17 @@ app.registerExtension({
 				CUSTOM_INT(this, "box_h", 0, function (v, _, node) {transformFunc(this, v, node, 3)}, {tooltip: "Height of selected region in pixels"})
 				// Strength slider removed - now using per-region strength inputs from Python
 
+				// Initialize box widgets with values from Region 1 (fix for showing 0s on initial load)
+				const regionSelector = this.widgets[this.index];
+				if (regionSelector && this.properties["values"] && this.properties["values"].length > 0) {
+					// Manually trigger the callback to initialize box widgets
+					setTimeout(() => {
+						if (regionSelector.callback) {
+							regionSelector.callback.call(regionSelector, regionSelector.value, null, this);
+						}
+					}, 100);
+				}
+
 				this.onSelected = function () {
 					this.selected = true
 				}

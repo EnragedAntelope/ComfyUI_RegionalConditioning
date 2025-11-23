@@ -218,35 +218,35 @@ class EasyRegionMask:
             },
             "optional": {
                 "background_strength": ("FLOAT", {
-                    "default": 0.4,
+                    "default": 1.0,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Background conditioning strength (lower = regions show more, recommended: 0.3-0.5)"
+                    "tooltip": "Background conditioning strength (lower = regions show more, user-tested: 0.7-1.2)"
                 }),
                 "region1_prompt": ("STRING", {
                     "default": "red sports car",
                     "multiline": True,
-                    "tooltip": "Region 1 - TIP: Include spatial location in prompt (e.g. 'left side', 'top right')"
+                    "tooltip": "Region 1 - TIP: Include size/detail keywords (e.g. 'closeup', 'full body', 'large')"
                 }),
                 "region1_strength": ("FLOAT", {
-                    "default": 1.2,
+                    "default": 0.7,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 1 strength (recommended: 1.0-1.5, higher values may cause artifacts)"
+                    "tooltip": "Region 1 strength (user-tested: 0.7, range: 0.5-1.0)"
                 }),
                 "region2_prompt": ("STRING", {
                     "default": "closeup full body giraffe wearing sunglasses",
                     "multiline": True,
-                    "tooltip": "Region 2 - TIP: Include spatial location in prompt (e.g. 'right third', 'bottom left')"
+                    "tooltip": "Region 2 - TIP: Include size/detail keywords (e.g. 'closeup', 'full body', 'large')"
                 }),
                 "region2_strength": ("FLOAT", {
-                    "default": 1.8,
+                    "default": 0.8,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 2 strength (recommended: 1.5-2.0, higher values may cause artifacts)"
+                    "tooltip": "Region 2 strength (user-tested: 0.8, range: 0.6-1.2)"
                 }),
                 "region3_prompt": ("STRING", {
                     "default": "blue bird flying",
@@ -254,11 +254,11 @@ class EasyRegionMask:
                     "tooltip": "Region 3 - Optional third region"
                 }),
                 "region3_strength": ("FLOAT", {
-                    "default": 2.2,
+                    "default": 1.5,
                     "min": 0.0,
                     "max": 10.0,
                     "step": 0.1,
-                    "tooltip": "Region 3 strength (recommended: 2.0-2.5, higher values may cause artifacts)"
+                    "tooltip": "Region 3 strength (user-tested: 1.5, range: 1.0-2.0)"
                 }),
                 "region4_prompt": ("STRING", {
                     "default": "",
@@ -290,15 +290,15 @@ Quick Start:
 1. Connect CLIP from checkpoint
 2. Set width/height to match your latent exactly
 3. Type prompts (background + regions)
-4. Adjust per-region strength (defaults: 1.2, 1.8, 2.2, 2.5)
+4. Adjust per-region strength (defaults: 0.7, 0.8, 1.5, 2.5)
 5. Draw/adjust boxes on canvas
 
 See README for model-specific tips and recommended settings."""
 
     def encode_regions_mask(self, clip, width, height, background_strength, soften_masks, background_prompt, region1_prompt,
                            extra_pnginfo, unique_id, region_boxes="",
-                           region1_strength=1.2, region2_prompt="", region2_strength=1.8,
-                           region3_prompt="", region3_strength=2.2, region4_prompt="", region4_strength=2.5):
+                           region1_strength=0.7, region2_prompt="", region2_strength=0.8,
+                           region3_prompt="", region3_strength=1.5, region4_prompt="", region4_strength=2.5):
         """Encode all prompts and apply mask-based regional conditioning."""
 
         # Default template boxes (fallback if no data from UI)
