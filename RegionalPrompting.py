@@ -193,14 +193,14 @@ class EasyRegionMask:
             "required": {
                 "clip": ("CLIP", {"tooltip": "CLIP model from your checkpoint"}),
                 "width": ("INT", {
-                    "default": 1024,
+                    "default": 1344,
                     "min": 64,
                     "max": MAX_RESOLUTION,
                     "step": 64,
                     "tooltip": "Output width - must match your latent/sampler"
                 }),
                 "height": ("INT", {
-                    "default": 1024,
+                    "default": 768,
                     "min": 64,
                     "max": MAX_RESOLUTION,
                     "step": 64,
@@ -225,7 +225,7 @@ class EasyRegionMask:
                     "tooltip": "Background conditioning strength (lower = regions show more, try 0.3-0.7)"
                 }),
                 "region1_prompt": ("STRING", {
-                    "default": "red sports car on left side of image (left third of image)",
+                    "default": "red sports car",
                     "multiline": True,
                     "tooltip": "Region 1 - TIP: Include spatial location in prompt (e.g. 'left side', 'top right')"
                 }),
@@ -237,7 +237,7 @@ class EasyRegionMask:
                     "tooltip": "Region 1 strength (start with 2-4, adjust if region doesn't show or is too soft)"
                 }),
                 "region2_prompt": ("STRING", {
-                    "default": "giraffe wearing sunglasses on right side of image (last third of image)",
+                    "default": "closeup full body giraffe wearing sunglasses",
                     "multiline": True,
                     "tooltip": "Region 2 - TIP: Include spatial location in prompt (e.g. 'right third', 'bottom left')"
                 }),
@@ -249,7 +249,7 @@ class EasyRegionMask:
                     "tooltip": "Region 2 strength (start with 3-5, adjust if needed)"
                 }),
                 "region3_prompt": ("STRING", {
-                    "default": "",
+                    "default": "blue bird flying",
                     "multiline": True,
                     "tooltip": "Region 3 - Optional third region"
                 }),
@@ -302,9 +302,11 @@ See README for model-specific tips and recommended settings."""
         """Encode all prompts and apply mask-based regional conditioning."""
 
         # Default template boxes (fallback if no data from UI)
+        # Matches user's 1344x768 workflow with 3 regions
         values = [
-            [82, 205, 277, 614, 0.0],   # Region 1 - percentage-based for 1024x1024
-            [717, 154, 287, 696, 0.0]   # Region 2 - percentage-based for 1024x1024
+            [0, 320, 368, 462, 2.0],      # Region 1 - red sports car (left)
+            [448, 64, 384, 704, 2.0],     # Region 2 - giraffe (center-right)
+            [945, 0, 378, 256, 2.0]       # Region 3 - blue bird (top-right)
         ]
 
         # First try to parse from hidden widget (works on fresh nodes)
@@ -471,16 +473,51 @@ See README for model-specific tips and recommended settings."""
                         if x_end - 1 - edge_idx >= x_latent:
                             feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx] = torch.minimum(feathered_mask[0, y_latent:y_end, x_end - 1 - edge_idx], torch.tensor(fade))
 
-            # Apply both standard mask and attention mask to conditioning
+            # Apply mask-based conditioning with attention masking
             for t in encoded_conditionings[i]:
                 n = [t[0], t[1].copy()]
                 n[1]['mask'] = feathered_mask  # Feathered for smooth visual blending
                 n[1]['mask_strength'] = max(0.0, min(10.0, strength))
                 n[1]['set_area_to_bounds'] = False
-                # Attention mask (binary, no feathering) forces model to ONLY attend to this region
-                # Prevents "bird center-frame" when region is upper-right
-                n[1]['attention_mask'] = mask  # Binary 1.0 values, precise spatial control
-                n[1]['attention_mask_img_shape'] = (latent_height, latent_width)  # Required by ComfyUI API
+
+                # Create attention mask for precise regional control (Flux/DiT models)
+                # Format: [batch, (txt_tokens + h*w), (txt_tokens + h*w)]
+                # This masks cross-attention between text and image tokens
+                cond_tensor = t[0]  # [batch, seq_len, hidden_dim]
+                txt_tokens = cond_tensor.shape[1]  # Number of text tokens from encoding
+                img_tokens = latent_height * latent_width  # Flattened image tokens
+                total_tokens = txt_tokens + img_tokens
+
+                # Initialize with -inf (block all attention) then selectively enable
+                # Using -10000 as practical -inf value that doesn't cause numerical issues
+                attention_mask = torch.full((1, total_tokens, total_tokens), -10000.0, dtype=torch.float32)
+
+                # Enable text-to-text attention (always allow)
+                attention_mask[0, :txt_tokens, :txt_tokens] = 0.0
+
+                # Enable text-to-image attention ONLY for tokens in this region
+                for y in range(y_latent, y_end):
+                    for x in range(x_latent, x_end):
+                        img_token_idx = txt_tokens + (y * latent_width + x)
+                        # Text can attend to this region's image tokens
+                        attention_mask[0, :txt_tokens, img_token_idx] = 0.0
+                        # This region's image tokens can attend to text
+                        attention_mask[0, img_token_idx, :txt_tokens] = 0.0
+
+                # Enable image-to-image attention within this region
+                for y1 in range(y_latent, y_end):
+                    for x1 in range(x_latent, x_end):
+                        img_token_idx1 = txt_tokens + (y1 * latent_width + x1)
+                        for y2 in range(y_latent, y_end):
+                            for x2 in range(x_latent, x_end):
+                                img_token_idx2 = txt_tokens + (y2 * latent_width + x2)
+                                # Tokens within region can attend to each other
+                                attention_mask[0, img_token_idx1, img_token_idx2] = 0.0
+
+                # Set attention mask parameters for ComfyUI
+                n[1]['attention_mask'] = attention_mask
+                n[1]['attention_mask_img_shape'] = (latent_height, latent_width)
+
                 combined_conditioning.append(n)
 
         print(f"   ✅ Generated {len(combined_conditioning)} conditioning blocks\n")

@@ -345,12 +345,16 @@ app.registerExtension({
 			nodeType.prototype.onNodeCreated = function () {
 				const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
-				const defaultWidth = 1024;
-				const defaultHeight = 1024;
+				const defaultWidth = 1344;
+				const defaultHeight = 768;
 				this.setProperty("width", defaultWidth)
 				this.setProperty("height", defaultHeight)
-				// Calculate percentage-based defaults (divisible by 8)
-				this.setProperty("values", calculateDefaultRegions(defaultWidth, defaultHeight))
+				// Default regions matching user workflow (car, giraffe, bird)
+				this.setProperty("values", [
+					[0, 320, 368, 462, 2.0],      // Region 1 - red sports car (left)
+					[448, 64, 384, 704, 2.0],     // Region 2 - giraffe (center-right)
+					[945, 0, 378, 256, 2.0]       // Region 3 - blue bird (top-right)
+				])
 
 				this.selected = false
 
