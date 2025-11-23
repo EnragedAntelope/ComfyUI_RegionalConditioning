@@ -194,6 +194,66 @@ app.registerExtension({
 				// Add canvas after the prompt inputs
 				addEasyRegionCanvas(this, app)
 
+				// Dynamic region management based on prompts
+				const node = this;
+				const updateRegionsFromPrompts = () => {
+					const defaultWidth = node.properties["width"] || (node.type === "EasyRegionMask" ? 1024 : 512);
+					const defaultHeight = node.properties["height"] || (node.type === "EasyRegionMask" ? 1024 : 512);
+					const currentValues = node.properties["values"] || [];
+
+					// Check which region prompts have content
+					const regionPrompts = [
+						node.widgets.find(w => w.name === "region1_prompt"),
+						node.widgets.find(w => w.name === "region2_prompt"),
+						node.widgets.find(w => w.name === "region3_prompt"),
+						node.widgets.find(w => w.name === "region4_prompt")
+					];
+
+					const newValues = [];
+					for (let i = 0; i < regionPrompts.length; i++) {
+						const prompt = regionPrompts[i]?.value || "";
+						if (prompt.trim()) {
+							// Region has content - ensure it has a box
+							if (currentValues[i]) {
+								// Keep existing box
+								newValues.push(currentValues[i]);
+							} else {
+								// Create new box with percentage-based defaults
+								const allRegions = calculateDefaultRegions(defaultWidth, defaultHeight);
+								const defaultBox = allRegions[Math.min(i, allRegions.length - 1)];
+								newValues.push(defaultBox);
+							}
+						} else {
+							// Region is empty - don't include box
+							newValues.push(null);
+						}
+					}
+
+					// Remove null entries and update
+					node.properties["values"] = newValues.filter(v => v !== null);
+
+					// Update hidden widget
+					const boxWidget = node.widgets.find(w => w.name === "region_boxes");
+					if (boxWidget) {
+						boxWidget.value = JSON.stringify(node.properties["values"]);
+					}
+
+					// Update region selector max
+					const regionSelector = node.widgets[node.index];
+					if (regionSelector) {
+						regionSelector.options.max = Math.max(1, node.properties["values"].length);
+						// Clamp current value
+						if (regionSelector.value > node.properties["values"].length) {
+							regionSelector.value = node.properties["values"].length;
+						}
+					}
+
+					// Force canvas redraw
+					if (app.graph) {
+						app.graph.setDirtyCanvas(true, true);
+					}
+				};
+
 				// Limit height of multiline prompt widgets to make node more compact
 				const promptLabels = {
 				"background_prompt": "🌍 Background Prompt:",
@@ -210,6 +270,17 @@ app.registerExtension({
 					if (w.inputEl) {
 						w.inputEl.style.maxHeight = "60px";  // ~3 lines of text
 						w.inputEl.style.overflowY = "auto";
+					}
+
+					// Add callback to update regions when prompt changes
+					if (w.name.startsWith("region")) {
+						const originalCallback = w.callback;
+						w.callback = function(value) {
+							if (originalCallback) {
+								originalCallback.call(this, value);
+							}
+							updateRegionsFromPrompts();
+						};
 					}
 				}
 			}
@@ -295,6 +366,66 @@ app.registerExtension({
 				// Add canvas after the prompt inputs
 				addEasyRegionCanvas(this, app)
 
+				// Dynamic region management based on prompts
+				const node = this;
+				const updateRegionsFromPrompts = () => {
+					const defaultWidth = node.properties["width"] || (node.type === "EasyRegionMask" ? 1024 : 512);
+					const defaultHeight = node.properties["height"] || (node.type === "EasyRegionMask" ? 1024 : 512);
+					const currentValues = node.properties["values"] || [];
+
+					// Check which region prompts have content
+					const regionPrompts = [
+						node.widgets.find(w => w.name === "region1_prompt"),
+						node.widgets.find(w => w.name === "region2_prompt"),
+						node.widgets.find(w => w.name === "region3_prompt"),
+						node.widgets.find(w => w.name === "region4_prompt")
+					];
+
+					const newValues = [];
+					for (let i = 0; i < regionPrompts.length; i++) {
+						const prompt = regionPrompts[i]?.value || "";
+						if (prompt.trim()) {
+							// Region has content - ensure it has a box
+							if (currentValues[i]) {
+								// Keep existing box
+								newValues.push(currentValues[i]);
+							} else {
+								// Create new box with percentage-based defaults
+								const allRegions = calculateDefaultRegions(defaultWidth, defaultHeight);
+								const defaultBox = allRegions[Math.min(i, allRegions.length - 1)];
+								newValues.push(defaultBox);
+							}
+						} else {
+							// Region is empty - don't include box
+							newValues.push(null);
+						}
+					}
+
+					// Remove null entries and update
+					node.properties["values"] = newValues.filter(v => v !== null);
+
+					// Update hidden widget
+					const boxWidget = node.widgets.find(w => w.name === "region_boxes");
+					if (boxWidget) {
+						boxWidget.value = JSON.stringify(node.properties["values"]);
+					}
+
+					// Update region selector max
+					const regionSelector = node.widgets[node.index];
+					if (regionSelector) {
+						regionSelector.options.max = Math.max(1, node.properties["values"].length);
+						// Clamp current value
+						if (regionSelector.value > node.properties["values"].length) {
+							regionSelector.value = node.properties["values"].length;
+						}
+					}
+
+					// Force canvas redraw
+					if (app.graph) {
+						app.graph.setDirtyCanvas(true, true);
+					}
+				};
+
 				// Limit height of multiline prompt widgets to make node more compact
 				const promptLabels = {
 				"background_prompt": "🌍 Background Prompt:",
@@ -311,6 +442,17 @@ app.registerExtension({
 					if (w.inputEl) {
 						w.inputEl.style.maxHeight = "60px";  // ~3 lines of text
 						w.inputEl.style.overflowY = "auto";
+					}
+
+					// Add callback to update regions when prompt changes
+					if (w.name.startsWith("region")) {
+						const originalCallback = w.callback;
+						w.callback = function(value) {
+							if (originalCallback) {
+								originalCallback.call(this, value);
+							}
+							updateRegionsFromPrompts();
+						};
 					}
 				}
 			}
